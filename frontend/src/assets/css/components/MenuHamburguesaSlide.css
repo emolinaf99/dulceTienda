@@ -1,0 +1,162 @@
+/* Menu Hamburguesa Styles */
+
+.site-home {
+    background-color: #f5f5f5;
+    box-shadow: 0px 5px 10px rgba(0, 0, 0, .16);
+    width: 250px;
+    min-height: 100%;
+    overflow-y:scroll;
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    margin-bottom: 0;
+    order: 1;
+    top: 0;
+    left: -350px;
+    transition: all .5s ease ;
+    padding: 0;
+    padding-top: 5rem;
+    z-index: 9999;
+    overflow-x: hidden;
+    gap: 5rem;
+}
+
+.activeMain {
+    transform:translate(+349px) ;
+}
+
+.site-home::-webkit-scrollbar {
+    -webkit-appearance: none;
+}
+
+.site-home::-webkit-scrollbar:vertical {
+    width:10px;
+}
+
+.site-home::-webkit-scrollbar-button:increment,.contenedor::-webkit-scrollbar-button {
+    display: none;
+} 
+
+.site-home::-webkit-scrollbar:horizontal {
+    height: 10px;
+}
+
+.site-home::-webkit-scrollbar-thumb {
+    background-color: #d5d5d5;
+    border-radius: 20px;
+    border: 2px solid #f1f2f3;
+}
+
+.site-home::-webkit-scrollbar-track {
+    border-radius: 10px;  
+}
+
+.site-home a {
+    color: #313131;
+    display: block;
+    font-size: 14px;
+    width: 100%;
+    cursor: pointer;
+    text-decoration: none;
+    padding: 10px 1rem;
+    border-bottom: 1px solid #b7b7b7;
+}
+
+
+.contItem {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 14px;
+    width: 100%;
+    padding: 10px;
+}
+
+.contItem i {
+    font-size: 25px;
+}
+
+.equis {
+    font-size: 22px;
+    color: #313131;
+    position: absolute;
+    top: 15px;
+    right: 2px;
+    height: 2rem;
+    width: 2rem;
+    text-align: center;
+    cursor: pointer;
+}
+
+.iconC {
+    font-size: 25px;
+    margin-right: 0.5rem;
+    width: 2rem;
+    text-align: center;
+}
+
+.equis:focus {
+    color: #EDC500;
+    transform: scale(1.1);
+    
+}
+
+.opacity {
+    transition: all .5s ease;
+    bottom: 0;
+    position: fixed;
+    background-color: #101010a8;
+    z-index:11;
+    display: none;
+    overflow-y: hidden;
+    left: 0%;
+    animation-name: tiempoAparicion;
+    animation-duration: .5s;
+    height: 100%;
+    width: 100%;
+}
+
+.opacityVentanas {
+    transition: all .5s ease;
+    bottom: 0;
+    position: fixed;
+    background-color: #101010a8;
+    z-index:11;
+    display: none;
+    overflow-y: hidden;
+    left: 0%;
+    animation-name: tiempoAparicion;
+    animation-duration: .3s;
+    height: 100%;
+    width: 100%;
+}
+
+@keyframes tiempoAparicion {
+    from {
+        
+        background-color: transparent;
+    }
+
+    to {
+        background-color: #101010a8;
+    }
+}
+
+
+
+.site-home a:hover, .site-home a:focus {
+        background-color:#e0e0e0;
+    }
+    
+.site-home a:hover , .site-home a:focus  {
+    color: #313131
+}
+
+.site-home a {
+    color: #313131;
+    width: 250px;
+}

@@ -1,0 +1,104 @@
+.categoriesSection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 2rem 15px;
+    width: 100%;
+    overflow-x: hidden; /* Prevenir expansión horizontal */
+}
+
+.categoriesSection h1 {
+    font-size: 20px;
+    font-family: 'Roboto';
+    font-weight: 600;
+    color: #333333;
+    text-align: center;
+}
+
+.imagesCategories {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start; /* Alineación a la izquierda */
+    gap: 1rem;
+    width: 100%;
+    overflow-x: auto; /* Scroll automático */
+    scroll-snap-type: x mandatory; /* Scroll controlado */
+}
+
+.imagesCategories::-webkit-scrollbar {
+    display: none; /* Ocultar scrollbar en navegadores WebKit */
+}
+
+.blockCategory {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-shrink: 0; /* Evitar que se encojan */
+    scroll-snap-align: start; /* Ajustar el snapping al inicio */
+    padding: 0 10px;
+}
+
+.blockCategory img {
+    width: 100px; /* Ajusta el tamaño según sea necesario */
+    height: 100px; /* Igual que el width para mantener un cuadrado */
+    overflow: hidden;
+    border-radius: 50%;
+}
+
+.blockCategory p {
+    font-weight: 400;
+    font-family: 'Roboto';
+    font-size: 16px;
+    color: #333333;
+}
+
+.contenedorGeneralCategorias {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    position: relative;
+}
+
+.botonesSlideOutside {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    position: absolute;
+    top: 30%;
+}
+
+.botonesSlideOutside i {
+    font-size: 30px;
+    color: #988c8c;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 5rem;
+    z-index: 99;
+}
+
+
+@media screen and (min-width:768px) {
+    .categoriesSection h1 {
+        font-size: 28px;
+    }
+
+    .contenedorGeneralCategorias {
+        width: 90%;
+    }
+}
+
+@media screen and (min-width:1280px) {
+    .blockCategory img {
+        width: 150px; /* Ajusta el tamaño según sea necesario */
+        height: 150px; /* Igual que el width para mantener un cuadrado */
+       
+    }
+}

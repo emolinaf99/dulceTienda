@@ -1,0 +1,177 @@
+.contenedorTotalCheckout {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Roboto';
+    margin-top: 6rem;
+}
+
+.contenedorCheckout {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center
+
+}
+
+.infoContCheckout {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    gap: 2rem;
+}
+
+.blockCheckout {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    position: relative;
+}
+
+.labelCheckout {
+    font-weight: 600;
+    width: 100%;
+    text-align: left;
+    font-size: 21px;
+}
+
+.inputCheckout {
+    border: 1px solid #ced4da;
+    height: 3rem;
+    border-radius: 5px;
+    padding-left: 0.5rem;
+    width: 100%;
+}
+
+.checkCO {
+    display: flex;
+    width: 100%;
+    gap: 0.5rem;
+}
+
+.blockCheckout a {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    border-bottom: 1px solid #333333;
+    padding-bottom: 2px;
+}
+
+.buttonCO {
+    border: 1px solid #ced4da;
+    height: 3rem;
+    border-radius: 5px;
+    padding-left: 0.5rem;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 1rem;
+    gap: 1rem;
+}
+
+.blockIntoButton {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 14px;
+    align-items: center;
+}
+
+.blockIntoButton img {
+    width: 70px;
+}
+
+.buttonCO i {
+    color: #838181;
+}
+
+.selectedOption {
+    border: 1px solid #333333;
+    background-color: #efebeb41;
+    color: black;
+}
+
+.optMismaDireccion {
+    border-top: 0;
+    
+}
+
+.formOtherAddress {
+    background-color: #f2f5f7;
+    padding: 1rem;
+    position: relative; /* Cambiar de absolute a relative */
+    left: 0;
+    right: 0;
+    top: 0; /* Asegurar que esté en la posición correcta */
+    transition: all 0.5s ease; /* Aplicar una transición suave */
+}
+
+.contRowFormCheckout {
+    display: flex;
+    flex: column;
+    justify-content: center;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.contFormHidden {
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    height: auto;
+    transition: top 0.5s ease; /* Efecto de transición */
+}
+
+.hiddenForm {
+    max-height: 0; /* Oculta el contenido */
+    overflow: hidden; /* Evita que se vea el contenido */
+    transition: max-height 0.5s ease; /* Transición suave para ocultar o mostrar */
+}
+
+.visibleForm {
+    max-height: 500px; /* Valor grande para mostrar el contenido */
+    transition: max-height 0.5s ease; /* Transición suave */
+}
+
+
+.pPago {
+    width: 100%;
+    margin-bottom: 1rem; 
+    color: #838181; 
+    font-size: 14px;
+    text-align: left;
+}
+
+@media screen and (min-width:768px) {
+
+    .pPago {
+        text-align: center;
+    }
+
+    .infoContCheckout {
+        width: 70%;
+    }
+
+    .contRowFormCheckout {
+        width: 100%;
+        display: flex;
+        flex: row;
+    } 
+}
+
+@media screen and (min-width:1280px) {
+    
+}
+
+
+

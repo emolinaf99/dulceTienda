@@ -1,0 +1,41 @@
+.quienesSomosReviewContenedor {
+    background-color:#f2eced ;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem 3rem;
+    font-family: 'Roboto';
+    width: 100%;
+}
+
+.bloqueQuienesSomos {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    font-family: 'Roboto';
+    color: #333333;
+    width: 100%;
+}
+
+.bloqueQuienesSomos h4 {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.bloqueQuienesSomos p {
+    text-align: center;
+    font-weight: 300;
+}
+
+@media screen and (min-width:768px) {
+    .bloqueQuienesSomos {
+        width: 90%;
+    }
+}
+
+@media screen and (min-width:1280px) {
+
+}

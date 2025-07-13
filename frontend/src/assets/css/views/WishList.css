@@ -1,0 +1,127 @@
+.contenedorGeneralDeseos {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    margin-top: 6rem;
+    font-family: 'Roboto';
+    color: #333333;
+    padding: 2rem;
+}
+
+.contenedorDeseos {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+}
+
+.contenedorDeseos h1 {
+    width: 100%;
+    text-align: center;
+    font-weight: 600;
+    font-size: 25px;
+    margin: 0;
+}
+
+.contenedorDeseos p {
+    text-align: center;
+}
+
+.subrayText {
+    text-decoration:underline;
+    cursor: pointer;
+}
+
+.contenedorDeProductosLista {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 3 columnas del mismo tamaño */
+    grid-gap: 3em 2em;
+}
+
+.cajaProductoDeseo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    position: relative;
+}
+
+.cajaProductoDeseo img {
+    width: 100%;
+}
+
+.bloqueInformacionProductoLista {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-top: 0.5rem;
+    gap: 1rem;
+}
+
+.productInfo {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.nameProduct {
+    color: #333333;
+    font-weight: 600;
+}
+
+.priceProduct {
+    color: #333333;
+    font-weight: 500;
+}
+
+.selectPresentation {
+    width: 100%;
+    border: 1px solid #a5a2a2;
+    border-top: 0;
+    height: 1.2rem;
+}
+
+.btnAddToCartList {
+    padding: 0.3rem;
+    width: 100%;
+    background-color: transparent;
+    border: 1px solid #a5a2a2;
+    cursor: pointer;
+}
+
+.equisProductList {
+    position: absolute;
+    right: 0.5rem;
+    top: 0.5rem;
+    font-size: 25px;
+}
+
+@media screen and (min-width:768px) {
+    .contenedorDeProductosLista {
+        grid-template-columns: repeat(3, 1fr); /* 4 columnas del mismo tamaño */
+    }
+
+    .contenedorDeseos {
+        width: 90%;
+    }
+}
+
+@media screen and (min-width:1280px) {
+    .contenedorDeProductosLista {
+        grid-template-columns: repeat(4, 1fr); /* 4 columnas del mismo tamaño */
+    }
+
+    .contenedorDeseos {
+        width: 80%;
+    }
+}

@@ -1,0 +1,238 @@
+header {
+    width: 100vw;
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Roboto';
+    z-index: 100000;
+}
+
+.s1Header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    background-color: white;
+    padding: 1rem 1rem;
+    height: 4rem;
+    box-shadow: 0 1px 1px #00000029;
+}
+
+.navbar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.navbar img {
+    width: 20px;
+    cursor: pointer;
+}
+
+.contenedorSectionTwo {
+    width: 100%;
+    background-color: black;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+
+
+
+.s2Header {
+    background-color: black;
+    height: 2rem;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    gap: 3rem;
+    padding: 0 5rem;
+    
+}
+
+#navbarCategorias {
+    width: 80%;
+    display: none;
+    top: -4rem;
+    overflow-x: scroll;
+    justify-content: flex-start;
+    
+}
+
+#navbarCategorias::-webkit-scrollbar {
+    display: none; /* Ocultar scrollbar en navegadores WebKit */
+}
+
+#mayoristaMovile {
+    display: flex;
+}
+
+.itemSecondNavbar {
+    color: white;
+    white-space: nowrap; /* Evita que el texto dentro de los elementos se rompa en varias líneas */
+}
+
+.headerScroll {
+    /* Animation */
+    animation-duration: 0.1s;
+    animation-name: headerScrollAnimation;
+    animation-delay: 0s;
+    animation-iteration-count:1;
+    animation-fill-mode: forwards;
+    animation-timing-function: linear;
+    box-shadow: 0px 1px 1px rgba(0, 0, 0, .16);
+}
+
+@keyframes headerScrollAnimation {
+    from {
+        background-color: transparent;
+    }
+
+    to {
+        background-color: white;
+    }
+}
+
+
+.bloque_logo_burguerMenu {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.logoApp {
+    width: 80px;
+}
+
+#burgerMenuIcon {
+    display: flex;
+    color: black;
+    font-size: 25px;
+    width: 35px;
+    cursor: pointer;
+}
+ 
+
+.activeNavbar {
+    display: flex;
+    top: 5rem;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, .16);
+    animation-duration: 0.2s;
+    animation-name: aparicionNavbar;
+    animation-delay: 0s;
+    animation-iteration-count:1;
+    animation-fill-mode: forwards;
+    animation-timing-function: linear;
+}
+
+.botonHeader {
+    padding: 10px;
+    border-radius: 20px;
+    width: 9rem;
+    border: 1px solid #d5d5d5;
+    background-color: transparent;
+    display: none;
+    cursor: pointer;
+}
+
+.redirectNavbar {
+    padding: 0.5rem;
+    width: 100%;
+    text-align: center;
+    color:white;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+
+.BGWhite {
+    background-color: white !important;
+}
+
+.menuHamburguesaScroll {
+    color: #666666 !important;
+}
+
+.notificacionContainer {
+    width: fit-content;
+    padding: 0.5rem 1rem;
+    height: 2.5rem;
+    background-color: white ;
+    border: #d5d5d5 1px solid;
+    color: tomato;
+    position: fixed;
+    z-index: 13;
+    bottom: 2rem;
+    left: 2rem;
+    display: none;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 5px 5px 5px rgba(0, 0, 0, .16);
+    border: 1px solid tomato;
+}
+
+@media screen and (min-width:768px) { 
+
+    .s1Header {
+        padding: 1rem 2rem;
+    }
+
+    .btnRegistro {
+        padding: 0.8rem 3rem;
+    }
+
+}
+
+
+@media screen and (min-width:1280px) {
+
+    .botonHeader {
+        padding: 10px;
+        border-radius: 20px;
+        width: 9rem;
+        border: 1px solid #d5d5d5;
+        background-color: transparent;
+        display: flex;
+        justify-content: center;
+    } 
+
+    .s1Header {
+        padding: 1rem 4rem;
+    }
+
+    #navbarCategorias {
+        display: flex;
+        top: 4rem;
+    }
+    
+    #mayoristaMovile {
+        display: none;
+    }
+
+    .bloque_logo_burguerMenu {
+        gap: 2rem;
+    }
+
+    #burgerMenuIcon {
+        display: none;
+    }
+
+    
+
+    .notificacionContainer {
+        left: 4rem;
+    }
+}

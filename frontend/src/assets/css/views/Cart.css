@@ -1,0 +1,212 @@
+.sectionBolsaDeCompras {
+    margin-top: 6rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Roboto';
+}
+
+.contenedorBolsaDeCompras {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    min-height: 60vh;
+}
+
+.contenedorBolsaDeCompras h4 {
+    color: #221915;
+    font-size: 18px;
+    text-align: center;
+    font-weight: 600;
+    margin: 2rem 0;
+}
+
+.sectionProdsCart {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+}
+
+.productBoxCart {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid #e7e7e7;
+    width: 100%;
+    padding: 1rem 2rem;
+    gap: 2rem;
+}
+
+.productBoxCart img {
+    max-width: 80px;
+}
+
+.infoProdCartBlock {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    width: 80%;
+}
+
+.nameProdCart {
+    width: 100%;
+    text-align: left;
+}
+
+.infoProdCart {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    width: 100%;
+}
+
+.cantidadProductosBlock {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100px;
+    border: 1px solid #e7e7e7;
+    box-shadow: 1px 2px 4px -2px #00000057;
+    color: #333;
+    height: 2rem;
+    cursor: pointer;
+}
+
+.cantidadProductosBlock i {
+    font-size: 14px;
+}
+
+.minusCant, .plusCant {
+    padding: 0 5px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.cantProd {
+    padding: 0 5px;
+    width: 80%;
+    text-align: center;
+}
+
+.precioProdCart {
+    color: #333;
+    width: auto;
+}
+
+.equisProdCart {
+    font-size: 20px;
+    color: #333;
+    cursor: pointer;
+}
+
+#cantProdColumn {
+    border: 0;
+    box-shadow: none;
+}
+
+#encabezadoCart {
+    display: none;
+}
+
+.precioProd {
+    display: none;
+}
+
+#subtotalSection {
+    align-items: flex-end;
+    padding: 2rem;
+    font-family: 'Roboto';
+    color: #333333;
+
+}
+
+#cajaDeProductos {
+    max-height: 25rem;
+    overflow-y: scroll;
+}
+
+.btnComprar {
+    width: 100%;
+    padding: 0.5rem;
+    background-color: black;
+    color: white;
+    cursor: pointer;
+    margin-top: 2rem;
+    text-align: center;
+}
+
+
+
+
+
+@media screen and (min-width:768px) {
+    .sectionProdsCart {
+        width: 90%;
+    }
+
+    .productBoxCart {
+        gap: 5rem;
+    }
+}
+
+@media screen and (min-width:1280px) {
+    .sectionProdsCart {
+        width: 70%;
+    }
+
+    .productBoxCart {
+        gap: 5rem;
+    }
+
+    .infoProdCartBlock {
+        flex-direction: row;
+    }
+
+    .precioProdCart {
+        width: 100px;
+    }
+
+    #encabezadoCart {
+        display: flex;
+        border-bottom: 4px solid #e7e7e7;
+        padding: 0;
+    }
+
+    .precioProd {
+        display: flex;
+    }
+
+    .nameProdCart {
+        width: 100%;
+    }
+
+    .cantidadProductosBlock {
+        order: 2;
+    }
+
+    .totalProd {
+        order: 3;
+    }
+
+    .equisProdCart{
+        order: 4;
+    }
+
+    .nameProdCart {
+        width: 300px;
+    }
+}

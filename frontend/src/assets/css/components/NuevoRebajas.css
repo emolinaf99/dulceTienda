@@ -1,0 +1,116 @@
+.seccionElementos {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    gap: 2rem;
+    margin-top: 30px;
+    margin-bottom: 18px;
+}
+
+
+.seccionElementos h4 {
+    font-family: 'Roboto';
+    font-size: 17px;
+}
+
+.sectionSlide {
+    width: 90%;
+    overflow-x: auto; 
+    position: relative;
+}
+
+.botonesSlide {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    position: absolute;
+    top: 40%;
+    padding: 0 1.5rem;
+    
+}
+
+.botonesSlide i {
+    font-size: 30px;
+    color: #988c8c;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 5rem;
+    z-index: 99;
+}
+
+.vitrinaSlide {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    overflow-x: auto;
+    transition: transform 0.3s ease-in-out;
+    will-change: transform; /* Mejora el rendimiento en el deslizamiento */
+    scroll-snap-type: x mandatory;
+    overflow-y: hidden;
+    white-space: nowrap;
+}
+
+.vitrinaSlide::-webkit-scrollbar {
+    display: none; /* Ocultar scrollbar en navegadores WebKit */
+}
+
+.cajaElemento {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-width: 100%; /* Asegúrate de usar min-width para mantener el tamaño */
+    scroll-snap-align: start; /* Alínea el inicio del elemento con el contenedor */
+    padding: 0 10px;
+}
+
+.cajaElemento img {
+    width: 100% ;
+}
+
+.itemData {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.3rem 0.5rem;
+}
+
+.nameItem {
+    font-weight: 500;
+    font-family: 'Roboto';
+    font-size: 14px;
+}
+
+.priceItem {
+    font-weight: 700;
+    color: #333333;
+    font-size: 14px;
+}
+
+@media screen and (min-width:768px) {
+    .vitrinaSlide {
+        justify-content: space-around;
+    }
+
+    .cajaElemento {
+        min-width: 50%; /* Asegúrate de usar min-width para mantener el tamaño */
+    }
+}
+
+@media screen and (min-width:1280px) {
+    .vitrinaSlide {
+        justify-content: space-evenly;
+    }
+
+    .cajaElemento {
+        min-width: 25%; /* Asegúrate de usar min-width para mantener el tamaño */
+    }
+}
