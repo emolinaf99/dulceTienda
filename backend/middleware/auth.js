@@ -3,16 +3,24 @@ import { User } from '../models/associations.js';
 
 export const authenticate = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
+    // First try to get token from cookies
+    let token = req.cookies.authToken;
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // Fallback to Authorization header for backward compatibility
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      }
+    }
+    
+    if (!token) {
       return res.status(401).json({ 
         success: false, 
         message: 'Token de acceso requerido' 
       });
     }
 
-    const token = authHeader.substring(7);
     const decoded = verifyToken(token);
     
     const user = await User.findByPk(decoded.userId, {
@@ -58,10 +66,18 @@ export const authorize = (...roles) => {
 
 export const optionalAuth = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
+    // First try to get token from cookies
+    let token = req.cookies.authToken;
     
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
+    // Fallback to Authorization header
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      }
+    }
+    
+    if (token) {
       const decoded = verifyToken(token);
       
       const user = await User.findByPk(decoded.userId, {

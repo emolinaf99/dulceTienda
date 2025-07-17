@@ -8,18 +8,13 @@ const fetchAPI = async (endpoint, options = {}) => {
     'Content-Type': 'application/json',
   };
 
-  // Agregar token de autenticación si existe
-  const token = localStorage.getItem('authToken');
-  if (token) {
-    defaultHeaders.Authorization = `Bearer ${token}`;
-  }
-
   const config = {
     ...options,
     headers: {
       ...defaultHeaders,
       ...options.headers,
     },
+    credentials: 'include', // Incluir cookies en las peticiones
   };
 
   try {
@@ -56,10 +51,17 @@ export const enviarCorreoContacto = async (datosContacto) => {
 export const auth = {
   // Registro de usuario
   register: async (userData) => {
-    return await fetchAPI('/auth/register', {
+    const response = await fetchAPI('/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
     });
+
+    // Guardar información del usuario (no el token, está en cookie HttpOnly)
+    if (response.data?.user) {
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
+
+    return response;
   },
 
   // Inicio de sesión
@@ -69,9 +71,8 @@ export const auth = {
       body: JSON.stringify(credentials),
     });
 
-    // Guardar token en localStorage
-    if (response.data?.token) {
-      localStorage.setItem('authToken', response.data.token);
+    // Guardar información del usuario (no el token, está en cookie HttpOnly)
+    if (response.data?.user) {
       localStorage.setItem('user', JSON.stringify(response.data.user));
     }
 
@@ -79,9 +80,17 @@ export const auth = {
   },
 
   // Cerrar sesión
-  logout: () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
+  logout: async () => {
+    try {
+      await fetchAPI('/auth/logout', {
+        method: 'POST',
+      });
+    } catch (error) {
+      console.error('Error cerrando sesión:', error);
+    } finally {
+      // Limpiar datos del usuario del localStorage
+      localStorage.removeItem('user');
+    }
   },
 
   // Obtener perfil del usuario

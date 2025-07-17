@@ -48,12 +48,20 @@ export const register = async (req, res) => {
       is_active: user.is_active
     };
 
+    // Set HttpOnly cookie
+    res.cookie('authToken', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // Use secure in production
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      path: '/'
+    });
+
     res.status(201).json({
       success: true,
       message: 'Usuario registrado exitosamente',
       data: {
-        user: userResponse,
-        token
+        user: userResponse
       }
     });
   } catch (error) {
@@ -110,12 +118,20 @@ export const login = async (req, res) => {
       is_active: user.is_active
     };
 
+    // Set HttpOnly cookie
+    res.cookie('authToken', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // Use secure in production
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      path: '/'
+    });
+
     res.json({
       success: true,
       message: 'Inicio de sesión exitoso',
       data: {
-        user: userResponse,
-        token
+        user: userResponse
       }
     });
   } catch (error) {
@@ -197,6 +213,29 @@ export const updateProfile = async (req, res) => {
     });
   } catch (error) {
     console.error('Error actualizando perfil:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
+    });
+  }
+};
+
+export const logout = async (req, res) => {
+  try {
+    // Clear the HttpOnly cookie
+    res.clearCookie('authToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/'
+    });
+
+    res.json({
+      success: true,
+      message: 'Sesión cerrada exitosamente'
+    });
+  } catch (error) {
+    console.error('Error cerrando sesión:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'

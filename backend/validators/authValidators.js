@@ -7,10 +7,10 @@ export const registerValidation = [
     .normalizeEmail(),
   
   body('password')
-    .isLength({ min: 6 })
-    .withMessage('La contraseña debe tener al menos 6 caracteres')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-    .withMessage('La contraseña debe contener al menos una mayúscula, una minúscula y un número'),
+    .isLength({ min: 8 }) // Cambia el mínimo a 8 caracteres
+    .withMessage('La contraseña debe tener al menos 8 caracteres')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-])/) // Agrega la validación para carácter especial
+    .withMessage('La contraseña debe contener al menos una mayúscula, una minúscula, un número y un carácter especial'),
   
   body('first_name')
     .trim()
@@ -32,7 +32,6 @@ export const registerValidation = [
     .withMessage('Debe ser un número de teléfono válido'),
   
   body('role')
-    .optional()
     .isIn(['cliente', 'mayorista'])
     .withMessage('El rol debe ser cliente o mayorista')
 ];
@@ -45,7 +44,7 @@ export const loginValidation = [
   
   body('password')
     .notEmpty()
-    .withMessage('La contraseña es requerida')
+    .withMessage('La contraseña es obligatoria')
 ];
 
 export const updateProfileValidation = [

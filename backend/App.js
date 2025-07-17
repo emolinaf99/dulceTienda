@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 
 // Importar middleware de seguridad
@@ -46,6 +47,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 // Middleware de parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
 app.use(sanitizeInput);
 
 // Rutas API
