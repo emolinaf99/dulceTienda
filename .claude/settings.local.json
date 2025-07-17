@@ -5,7 +5,18 @@
       "Bash(cp:*)",
       "Bash(rm:*)",
       "Bash(npm install:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(npm run dev:*)",
+      "Bash(ls:*)",
+      "Bash(curl:*)",
+      "Bash(node:*)",
+      "Bash(sudo rm:*)",
+      "Bash(npm cache clean:*)",
+      "Bash(find:*)",
+      "Bash(chmod:*)",
+      "Bash(yarn install)",
+      "Bash(mv:*)",
+      "Bash(true)"
     ],
     "deny": []
   }

@@ -13,7 +13,17 @@ export const register = async (req, res) => {
       });
     }
 
-    const { email, password, first_name, last_name, phone, role = 'cliente' } = req.body;
+    const { email, password, name, first_name, last_name, phone, role = 'cliente' } = req.body;
+
+    // Si viene 'name', dividir en first_name y last_name
+    let firstName = first_name;
+    let lastName = last_name;
+    
+    if (name && !first_name && !last_name) {
+      const nameParts = name.trim().split(' ');
+      firstName = nameParts[0];
+      lastName = nameParts.slice(1).join(' ') || '';
+    }
 
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
@@ -26,8 +36,8 @@ export const register = async (req, res) => {
     const user = await User.create({
       email,
       password,
-      first_name,
-      last_name,
+      first_name: firstName,
+      last_name: lastName,
       phone,
       role: role === 'admin' && req.user?.role !== 'admin' ? 'cliente' : role
     });
@@ -41,6 +51,7 @@ export const register = async (req, res) => {
     const userResponse = {
       id: user.id,
       email: user.email,
+      name: `${user.first_name} ${user.last_name}`.trim(),
       first_name: user.first_name,
       last_name: user.last_name,
       phone: user.phone,
@@ -60,9 +71,8 @@ export const register = async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Usuario registrado exitosamente',
-      data: {
-        user: userResponse
-      }
+      user: userResponse,
+      token: token
     });
   } catch (error) {
     console.error('Error en registro:', error);
@@ -111,6 +121,7 @@ export const login = async (req, res) => {
     const userResponse = {
       id: user.id,
       email: user.email,
+      name: `${user.first_name} ${user.last_name}`.trim(),
       first_name: user.first_name,
       last_name: user.last_name,
       phone: user.phone,
@@ -130,10 +141,11 @@ export const login = async (req, res) => {
     res.json({
       success: true,
       message: 'Inicio de sesión exitoso',
-      data: {
-        user: userResponse
-      }
+      user: userResponse,
+      token: token
     });
+
+    console.log('inicio exitoso');
   } catch (error) {
     console.error('Error en login:', error);
     res.status(500).json({
@@ -148,6 +160,7 @@ export const getProfile = async (req, res) => {
     const userResponse = {
       id: req.user.id,
       email: req.user.email,
+      name: `${req.user.first_name} ${req.user.last_name}`.trim(),
       first_name: req.user.first_name,
       last_name: req.user.last_name,
       phone: req.user.phone,
@@ -196,6 +209,7 @@ export const updateProfile = async (req, res) => {
     const userResponse = {
       id: req.user.id,
       email: req.user.email,
+      name: `${req.user.first_name} ${req.user.last_name}`.trim(),
       first_name: req.user.first_name,
       last_name: req.user.last_name,
       phone: req.user.phone,

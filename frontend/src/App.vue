@@ -1,10 +1,17 @@
 <script setup>
   import {reactive, ref, onMounted} from 'vue'
   import { RouterLink, RouterView, useRoute} from 'vue-router'
-  import HeaderPartial from './partials/Header.vue'
-  import FooterPartial from './partials/Footer.vue'
+  import HeaderPartial from './components/Header.vue'
+  import FooterPartial from './components/Footer.vue'
+  import { useUserStore } from '@/js/stores/userLogged.js'
 
   const route = useRoute()
+  const userStore = useUserStore()
+
+  // Cargar usuario al iniciar la aplicación
+  onMounted(() => {
+    userStore.loadUserFromStorage()
+  })
 
 </script>
 

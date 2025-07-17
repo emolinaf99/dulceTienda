@@ -57,7 +57,7 @@ const createDefaultCategories = async () => {
         {
           name: 'Descuentos',
           description: 'Productos con descuentos especiales',
-          type: 'Descuentos',
+          type: 'rebajas',
           sort_order: 5
         }
       ];
