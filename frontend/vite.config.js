@@ -13,12 +13,20 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)) //El alias '@' se configura para apuntar a la carpeta src, lo que facilita la importación de módulos dentro de tu código.
     }
   },
-  // server: {
-  //   proxy: {
-  //     '/api': 'http://localhost:3000', //El proxy redirige todas las solicitudes que comienzan con /api al backend de Express que corre en http://localhost:3000.
-  //   }
-    
-  // }
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000', // URL del backend
+        changeOrigin: true,
+        secure: false
+      },
+      '/uploads': {
+        target: 'http://localhost:3000', // Para servir las imágenes de productos
+        changeOrigin: true,
+        secure: false
+      }
+    }
+  }
 
 })
 

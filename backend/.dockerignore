@@ -1,0 +1,29 @@
+# Ignorar dependencias locales
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Ignorar archivos de entorno y configuración local
+.env
+.env.local
+
+# Ignorar carpetas de control de versiones y editor
+.git
+.gitignore
+.vscode
+.idea
+
+# Ignorar Dockerfile o docker-compose si no los necesitas dentro del contenedor
+Dockerfile
+docker-compose.yml
+
+# Ignorar archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Otros archivos comunes de desarrollo que no se necesitan en producción
+*.log
+*.swp
+*.swo
+*.bak
+*.tmp

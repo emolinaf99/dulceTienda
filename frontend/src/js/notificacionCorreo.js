@@ -8,7 +8,7 @@ const transporter = nodemailer.createTransport({
     port: 465,
     secure: true, // si usa SSL
     auth: {
-      // TODO: replace `user` and `pass` values from <https://forwardemail.net>
+      // TODO: replace `user` and `pass` values 
       user: process.env.USER,
       pass: process.env.APP_PASSWORD,
     },
@@ -87,7 +87,6 @@ export default async function enviarNotificacion(cualNotificacion, informacion, 
                         overflow-x: hidden;
                         font-weight: 300;
                         display: 'block';
-        
                     }
         
                     .b {
