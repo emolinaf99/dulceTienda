@@ -9,6 +9,13 @@
     font-family: 'Roboto';
 }
 
+.passwordEye {
+    position: absolute;
+    top: 2.5rem;
+    right: 0.7rem;
+    color: gray;
+}
+
 .bloqueLogin {
     display: flex;
     flex-direction: column;

@@ -3,6 +3,7 @@
     import { RouterLink, RouterView, useRouter } from 'vue-router'
     import { useApi } from '@/js/useFetch.js'
     import { useUserStore } from '@/js/stores/userLogged.js'
+    import { inputFromPasswordToText } from '@/js/inputFromPasswordToText.js'
 
     const router = useRouter()
     const userStore = useUserStore()
@@ -60,9 +61,16 @@
                 <label for="">Correo electrónico</label>
                 <input type="email" v-model="form.email" :disabled="isLoading">
             </div>
-            <div class="inputBlock">
+            <div class="inputBlock" style="position: relative;">
                 <label for="">Contraseña</label>
                 <input type="password" v-model="form.password" :disabled="isLoading" @keyup.enter="handleLogin">
+                <!-- Botón para mostrar/ocultar la contraseña -->
+                <span class="passwordEye">
+                    <i
+                        class="fa fa-eye-slash"
+                        @click="inputFromPasswordToText($event.target)" 
+                    ></i>
+                </span>
             </div>
             <div class="error" v-if="errorMessage">
                 <p>{{ errorMessage }}</p>

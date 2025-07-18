@@ -46,12 +46,13 @@
             
             <!-- Si está logueado -->
             <div v-else class="user-menu">
-                <span class="user-name">{{ userLogged?.name || userLogged?.email }}</span>
-                <button @click="handleLogout" class="logout-btn">Cerrar sesión</button>
+                <span class="user-name">{{ userLogged?.first_name || userLogged?.email }}</span>
+                
             </div>
             
-            <RouterLink to="/wishlist"><img src="/img/heartIcon.png" alt=""></RouterLink>
-            <RouterLink to="/cart"><img src="/img/shoppingBag.png" alt=""></RouterLink>
+            <RouterLink to="/wishlist"><img src="/img/heartIcon.png" title="Favoritos"></RouterLink>
+            <RouterLink to="/cart"><img src="/img/shoppingBag.png" title="Carrito"></RouterLink>
+            <div class="logout-btn" v-if="userLogged"><img @click="handleLogout" src="/img/logout.png" title="Cerrar sesión"></div>
             
         </div>
     </section>
