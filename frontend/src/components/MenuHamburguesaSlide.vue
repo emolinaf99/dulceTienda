@@ -1,5 +1,9 @@
 <script setup>
     import {reactive,ref,onMounted, watch} from 'vue'
+    import { useCategories } from '../js/composables/useCategories.js'
+
+    // Usar el composable de categorías
+    const { categories, loading, error } = useCategories();
 
     onMounted(() => {
         
@@ -53,11 +57,13 @@
     <div class="site-home" >
         <i class="fa-solid fa-xmark equis" id="equisOculta"></i> 
         <div class="contenedorSiteHome">
-            <RouterLink to="/"><div class="contItem"><p>Lo Nuevo</p></div></RouterLink>
-            <RouterLink to="/"><div class="contItem"><p>Camisetas</p></div></RouterLink>    
-            <RouterLink to="/"><div class="contItem"><p>Buzos</p></div></RouterLink>
-            <RouterLink to="/"><div class="contItem"><p>Leggins</p></div></RouterLink>
-            <RouterLink to="/"><div class="contItem"><p>Rebajas</p></div></RouterLink>
+            <RouterLink 
+                v-for="category in categories" 
+                :key="category.id" 
+                :to="`/category/${category.id}`"
+            >
+                <div class="contItem"><p>{{ category.name }}</p></div>
+            </RouterLink>
             <RouterLink to="/"><div class="contItem"><p>Mayoristas</p></div></RouterLink>
         </div>
 

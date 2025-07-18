@@ -1,7 +1,7 @@
 <script setup>
     import {reactive, ref, onMounted} from 'vue'
     import { RouterLink, RouterView, useRouter } from 'vue-router'
-    import { useApi } from '@/js/useFetch.js'
+    import { useApi } from '@/js/composables/useFetch.js'
     import { useUserStore } from '@/js/stores/userLogged.js'
     import { inputFromPasswordToText } from '@/js/inputFromPasswordToText.js'
 

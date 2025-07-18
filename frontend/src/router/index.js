@@ -40,7 +40,13 @@ const router = createRouter({
       path: '/checkouts',
       name: 'Checkouts',
       component: () => import('../views/Checkouts.vue')
-    }
+    },
+    {
+      path: '/category/:id',
+      name: 'CategoryDetail',
+      component: () => import('../views/CategoryDetail.vue'),
+      props: true // Pasar el parámetro 'id' como prop al componente
+    },
 
   ]
 })

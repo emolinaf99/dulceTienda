@@ -1,5 +1,5 @@
 import { ref, onMounted } from 'vue'
-import { useApi } from '../useFetch.js'
+import { useApi } from './useFetch.js'
 
 export function useCategories() {
   const categories = ref([])

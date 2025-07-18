@@ -65,7 +65,7 @@
             <RouterLink 
                 v-for="category in categories" 
                 :key="category.id" 
-                :to="`/${category.id}`"
+                :to="`/category/${category.id}`"
             >
                 <div class="itemSecondNavbar">{{ category.name.toUpperCase() }}</div>
             </RouterLink>
