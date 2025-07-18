@@ -3,12 +3,16 @@
     import { RouterLink, RouterView, useRoute, useRouter} from 'vue-router'
     import MenuHamburguesaSlide from '../components/MenuHamburguesaSlide.vue'
     import { useUserStore } from '../js/stores/userLogged.js';
+    import { useCategories } from '../js/composables/useCategories.js';
     
     const userStore = useUserStore();
     const userLogged = computed(() => userStore.userLogged);
     const isLoggedIn = computed(() => userStore.isLoggedIn);
     const route = useRoute()
     const router = useRouter()
+
+    // Usar el composable de categorías
+    const { categories, loading, error } = useCategories();
 
     // El usuario ya se carga desde App.vue
 
@@ -58,16 +62,13 @@
     </section>
     <section class="contenedorSectionTwo">
         <section class="s2Header" id="navbarCategorias">
-            <RouterLink to="/"><div class="itemSecondNavbar">LO NUEVO</div></RouterLink>
-            <RouterLink to="/"><div class="itemSecondNavbar">CAMISETAS</div></RouterLink>
-            <RouterLink to="/"><div class="itemSecondNavbar">LEGGINS</div></RouterLink>
-            <RouterLink to="/"><div class="itemSecondNavbar">BUSOS</div></RouterLink>
-            <RouterLink to="/"><div class="itemSecondNavbar">REBAJAS</div></RouterLink>
-            <RouterLink to="/"><div class="itemSecondNavbar">LO NUEVO</div></RouterLink>
-            <RouterLink to="/"><div class="itemSecondNavbar">CAMISETAS</div></RouterLink>
-            <RouterLink to="/"><div class="itemSecondNavbar">LEGGINS</div></RouterLink>
-            <RouterLink to="/"><div class="itemSecondNavbar">BUSOS</div></RouterLink>
-            <RouterLink to="/"><div class="itemSecondNavbar">REBAJAS</div></RouterLink>
+            <RouterLink 
+                v-for="category in categories" 
+                :key="category.id" 
+                :to="`/${category.id}`"
+            >
+                <div class="itemSecondNavbar">{{ category.name.toUpperCase() }}</div>
+            </RouterLink>
         </section>
     </section>
     
