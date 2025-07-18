@@ -1,19 +1,11 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/database.js';
 
-const Cart = sequelize.define('Cart', {
+const ProductVariant = sequelize.define('ProductVariant', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true
-  },
-  user_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: 'users',
-      key: 'id'
-    }
   },
   product_id: {
     type: DataTypes.INTEGER,
@@ -21,14 +13,6 @@ const Cart = sequelize.define('Cart', {
     references: {
       model: 'products',
       key: 'id'
-    }
-  },
-  quantity: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    defaultValue: 1,
-    validate: {
-      min: 1
     }
   },
   size_id: {
@@ -46,16 +30,27 @@ const Cart = sequelize.define('Cart', {
       model: 'colors',
       key: 'id'
     }
+  },
+  stock: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    validate: {
+      min: 0
+    }
+  },
+  sku: {
+    type: DataTypes.STRING(100),
+    allowNull: true
   }
 }, {
-  tableName: 'cart_items',
+  tableName: 'product_variants',
   underscored: true,
   indexes: [
     {
       unique: true,
-      fields: ['user_id', 'product_id', 'size_id', 'color_id']
+      fields: ['product_id', 'size_id', 'color_id']
     }
   ]
 });
 
-export default Cart;
+export default ProductVariant;

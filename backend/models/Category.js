@@ -32,9 +32,18 @@ const Category = sequelize.define('Category', {
   sort_order: {
     type: DataTypes.INTEGER,
     defaultValue: 0
+  },
+  type_size_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'type_sizes',
+      key: 'id'
+    }
   }
 }, {
-  tableName: 'categories'
+  tableName: 'categories',
+  underscored: true
 });
 
 export default Category;

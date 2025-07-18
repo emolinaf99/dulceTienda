@@ -53,7 +53,8 @@ const Order = sequelize.define('Order', {
     allowNull: true
   }
 }, {
-  tableName: 'orders'
+  tableName: 'orders',
+  underscored: true
 });
 
 const OrderItem = sequelize.define('OrderItem', {
@@ -102,7 +103,8 @@ const OrderItem = sequelize.define('OrderItem', {
     allowNull: false
   }
 }, {
-  tableName: 'order_items'
+  tableName: 'order_items',
+  underscored: true
 });
 
 export { Order, OrderItem };

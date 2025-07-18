@@ -14,6 +14,9 @@ import productRoutes from './routes/products.js';
 import categoryRoutes from './routes/categories.js';
 import cartRoutes from './routes/cart.js';
 import favoriteRoutes from './routes/favorites.js';
+import sizeRoutes from './routes/sizes.js';
+import colorRoutes from './routes/colors.js';
+import typeSizeRoutes from './routes/typeSizes.js';
 
 // Importar controlador de correos
 import { enviarCorreoContacto } from './controllers/emailController.js';
@@ -56,6 +59,9 @@ app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/favorites', favoriteRoutes);
+app.use('/api/sizes', sizeRoutes);
+app.use('/api/colors', colorRoutes);
+app.use('/api/type-sizes', typeSizeRoutes);
 
 // Ruta para envío de correos de contacto
 app.post('/api/enviarCorreo', enviarCorreoContacto);

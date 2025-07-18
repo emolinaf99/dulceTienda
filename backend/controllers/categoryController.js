@@ -1,5 +1,6 @@
-import { Category, Product } from '../models/associations.js';
+import { Category, Product, ProductVariant, Size, Color, ImgColorProduct } from '../models/associations.js';
 import { validationResult } from 'express-validator';
+import { Op } from 'sequelize';
 
 export const getAllCategories = async (req, res) => {
   try {
@@ -12,7 +13,24 @@ export const getAllCategories = async (req, res) => {
         as: 'products',
         where: { is_active: true },
         required: false,
-        attributes: ['id', 'name', 'price', 'discount_percentage', 'images']
+        attributes: ['id', 'name', 'price', 'discount_percentage'],
+        include: [
+          {
+            model: ProductVariant,
+            as: 'variants',
+            include: [
+              { model: Size, as: 'size', attributes: ['id', 'name'] },
+              { model: Color, as: 'color', attributes: ['id', 'name', 'hex_code'] }
+            ]
+          },
+          {
+            model: ImgColorProduct,
+            as: 'colorImages',
+            include: [
+              { model: Color, as: 'color', attributes: ['id', 'name'] }
+            ]
+          }
+        ]
       });
     }
 
@@ -47,7 +65,24 @@ export const getCategoryById = async (req, res) => {
           as: 'products',
           where: { is_active: true },
           required: false,
-          attributes: ['id', 'name', 'price', 'discount_percentage', 'images', 'stock']
+          attributes: ['id', 'name', 'price', 'discount_percentage'],
+          include: [
+            {
+              model: ProductVariant,
+              as: 'variants',
+              include: [
+                { model: Size, as: 'size', attributes: ['id', 'name'] },
+                { model: Color, as: 'color', attributes: ['id', 'name', 'hex_code'] }
+              ]
+            },
+            {
+              model: ImgColorProduct,
+              as: 'colorImages',
+              include: [
+                { model: Color, as: 'color', attributes: ['id', 'name'] }
+              ]
+            }
+          ]
         }
       ]
     });
@@ -83,7 +118,7 @@ export const createCategory = async (req, res) => {
       });
     }
 
-    const { name, description, image, sort_order = 0, type = 'normal' } = req.body;
+    const { name, description, image, sort_order = 0, type = 'normal', type_size_id } = req.body;
 
     const existingCategory = await Category.findOne({ where: { name } });
     if (existingCategory) {
@@ -98,7 +133,8 @@ export const createCategory = async (req, res) => {
       description,
       image,
       sort_order,
-      type
+      type,
+      type_size_id
     });
 
     res.status(201).json({
@@ -136,7 +172,7 @@ export const updateCategory = async (req, res) => {
       });
     }
 
-    const { name, description, image, sort_order, type, is_active } = req.body;
+    const { name, description, image, sort_order, type, is_active, type_size_id } = req.body;
 
     if (name && name !== category.name) {
       const existingCategory = await Category.findOne({ 
@@ -156,7 +192,8 @@ export const updateCategory = async (req, res) => {
       image,
       sort_order,
       type,
-      is_active
+      is_active,
+      type_size_id
     });
 
     res.json({

@@ -38,35 +38,6 @@ const Product = sequelize.define('Product', {
       return discount > 0 ? price - (price * discount / 100) : price;
     }
   },
-  stock: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0,
-    validate: {
-      min: 0
-    }
-  },
-  sizes: {
-    type: DataTypes.JSON,
-    allowNull: false,
-    defaultValue: []
-  },
-  colors: {
-    type: DataTypes.JSON,
-    allowNull: false,
-    defaultValue: []
-  },
-  images: {
-    type: DataTypes.JSON,
-    allowNull: false,
-    defaultValue: [],
-    validate: {
-      isValidImages(value) {
-        if (!Array.isArray(value) || value.length < 1 || value.length > 4) {
-          throw new Error('Debe tener entre 1 y 4 imágenes');
-        }
-      }
-    }
-  },
   is_active: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
@@ -84,7 +55,8 @@ const Product = sequelize.define('Product', {
     }
   }
 }, {
-  tableName: 'products'
+  tableName: 'products',
+  underscored: true
 });
 
 export default Product;

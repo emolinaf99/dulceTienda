@@ -1,5 +1,5 @@
 import sequelize from '../config/database.js';
-import { User, Category, Product, Cart, Favorite, Order, OrderItem } from '../models/associations.js';
+import { User, Category, Product, Cart, Favorite, Order, OrderItem, TypeSize, Size, Color, ProductVariant, ImgColorProduct } from '../models/associations.js';
 
 export const initializeDatabase = async () => {
   try {
@@ -11,10 +11,11 @@ export const initializeDatabase = async () => {
     await sequelize.sync({ force: false }); // force: true borra y recrea las tablas
     console.log('✅ Modelos sincronizados con la base de datos.');
 
-    // Crear categorías por defecto si no existen
+    // Crear datos iniciales
+    await createDefaultTypeSizes();
+    await createDefaultSizes();
+    await createDefaultColors();
     await createDefaultCategories();
-    
-    // Crear usuario administrador por defecto si no existe
     await createDefaultAdmin();
 
     console.log('✅ Base de datos inicializada correctamente.');
@@ -24,41 +25,133 @@ export const initializeDatabase = async () => {
   }
 };
 
+const createDefaultTypeSizes = async () => {
+  try {
+    const typeSizesCount = await TypeSize.count();
+    
+    if (typeSizesCount === 0) {
+      const defaultTypeSizes = [
+        { description: 'PRENDAS SUPERIORES' },
+        { description: 'PRENDAS INFERIORES' }
+      ];
+
+      await TypeSize.bulkCreate(defaultTypeSizes);
+      console.log('✅ Tipos de tallas por defecto creados.');
+    }
+  } catch (error) {
+    console.error('❌ Error creando tipos de tallas por defecto:', error);
+  }
+};
+
+const createDefaultSizes = async () => {
+  try {
+    const sizesCount = await Size.count();
+    
+    if (sizesCount === 0) {
+      // Obtener los IDs de los tipos de tallas
+      const prendasSuperiores = await TypeSize.findOne({ where: { description: 'PRENDAS SUPERIORES' } });
+      const prendasInferiores = await TypeSize.findOne({ where: { description: 'PRENDAS INFERIORES' } });
+
+      if (prendasSuperiores && prendasInferiores) {
+        const defaultSizes = [
+          // Tallas para prendas superiores
+          { name: 'XS', type_size_id: prendasSuperiores.id },
+          { name: 'S', type_size_id: prendasSuperiores.id },
+          { name: 'M', type_size_id: prendasSuperiores.id },
+          { name: 'L', type_size_id: prendasSuperiores.id },
+          { name: 'XL', type_size_id: prendasSuperiores.id },
+          { name: 'XXL', type_size_id: prendasSuperiores.id },
+          // Tallas para prendas inferiores
+          { name: '0', type_size_id: prendasInferiores.id },
+          { name: '2', type_size_id: prendasInferiores.id },
+          { name: '4', type_size_id: prendasInferiores.id },
+          { name: '6', type_size_id: prendasInferiores.id },
+          { name: '8', type_size_id: prendasInferiores.id },
+          { name: '10', type_size_id: prendasInferiores.id },
+          { name: '12', type_size_id: prendasInferiores.id },
+          { name: '14', type_size_id: prendasInferiores.id },
+          { name: '16', type_size_id: prendasInferiores.id }
+        ];
+
+        await Size.bulkCreate(defaultSizes);
+        console.log('✅ Tallas por defecto creadas.');
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error creando tallas por defecto:', error);
+  }
+};
+
+const createDefaultColors = async () => {
+  try {
+    const colorsCount = await Color.count();
+    
+    if (colorsCount === 0) {
+      const defaultColors = [
+        { name: 'Negro', hex_code: '#000000' },
+        { name: 'Blanco', hex_code: '#FFFFFF' },
+        { name: 'Gris', hex_code: '#808080' },
+        { name: 'Azul', hex_code: '#0000FF' },
+        { name: 'Rojo', hex_code: '#FF0000' },
+        { name: 'Verde', hex_code: '#008000' },
+        { name: 'Amarillo', hex_code: '#FFFF00' },
+        { name: 'Rosa', hex_code: '#FFC0CB' },
+        { name: 'Morado', hex_code: '#800080' },
+        { name: 'Café', hex_code: '#A52A2A' }
+      ];
+
+      await Color.bulkCreate(defaultColors);
+      console.log('✅ Colores por defecto creados.');
+    }
+  } catch (error) {
+    console.error('❌ Error creando colores por defecto:', error);
+  }
+};
+
 const createDefaultCategories = async () => {
   try {
     const categoriesCount = await Category.count();
     
     if (categoriesCount === 0) {
+      // Obtener los IDs de los tipos de tallas
+      const prendasSuperiores = await TypeSize.findOne({ where: { description: 'PRENDAS SUPERIORES' } });
+      const prendasInferiores = await TypeSize.findOne({ where: { description: 'PRENDAS INFERIORES' } });
+
       const defaultCategories = [
         {
           name: 'Camisetas',
           description: 'Camisetas para todas las ocasiones',
           type: 'normal',
-          sort_order: 1
+          sort_order: 1,
+          type_size_id: prendasSuperiores?.id
         },
         {
           name: 'Leggins',
           description: 'Leggins cómodos y modernos',
           type: 'normal',
-          sort_order: 2
+          sort_order: 2,
+          type_size_id: prendasInferiores?.id
         },
         {
           name: 'Buzos',
           description: 'Buzos para el clima frío',
           type: 'normal',
-          sort_order: 3
+          sort_order: 3,
+          type_size_id: prendasSuperiores?.id
         },
         {
           name: 'Lo Nuevo',
           description: 'Los últimos productos agregados',
           type: 'nuevo',
-          sort_order: 4
+          sort_order: 4,
+          type_size_id: null
         },
         {
           name: 'Descuentos',
           description: 'Productos con descuentos especiales',
           type: 'rebajas',
-          sort_order: 5
+          sort_order: 5,
+          type_size_id: null
         }
       ];
 

@@ -16,7 +16,9 @@
       "Bash(chmod:*)",
       "Bash(yarn install)",
       "Bash(mv:*)",
-      "Bash(true)"
+      "Bash(true)",
+      "Bash(npm start)",
+      "Bash(timeout 8s npm start)"
     ],
     "deny": []
   }

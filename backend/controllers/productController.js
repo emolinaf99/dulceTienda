@@ -1,4 +1,4 @@
-import { Product, Category } from '../models/associations.js';
+import { Product, Category, ProductVariant, Size, Color, ImgColorProduct } from '../models/associations.js';
 import { validationResult } from 'express-validator';
 import { Op } from 'sequelize';
 import fs from 'fs/promises';
@@ -54,6 +54,33 @@ export const getAllProducts = async (req, res) => {
           model: Category,
           as: 'category',
           attributes: ['id', 'name']
+        },
+        {
+          model: ProductVariant,
+          as: 'variants',
+          include: [
+            {
+              model: Size,
+              as: 'size',
+              attributes: ['id', 'name']
+            },
+            {
+              model: Color,
+              as: 'color',
+              attributes: ['id', 'name', 'hex_code']
+            }
+          ]
+        },
+        {
+          model: ImgColorProduct,
+          as: 'colorImages',
+          include: [
+            {
+              model: Color,
+              as: 'color',
+              attributes: ['id', 'name']
+            }
+          ]
         }
       ],
       order: [[sortBy, sortOrder.toUpperCase()]],
@@ -95,6 +122,33 @@ export const getProductById = async (req, res) => {
           model: Category,
           as: 'category',
           attributes: ['id', 'name']
+        },
+        {
+          model: ProductVariant,
+          as: 'variants',
+          include: [
+            {
+              model: Size,
+              as: 'size',
+              attributes: ['id', 'name']
+            },
+            {
+              model: Color,
+              as: 'color',
+              attributes: ['id', 'name', 'hex_code']
+            }
+          ]
+        },
+        {
+          model: ImgColorProduct,
+          as: 'colorImages',
+          include: [
+            {
+              model: Color,
+              as: 'color',
+              attributes: ['id', 'name']
+            }
+          ]
         }
       ]
     });
@@ -145,9 +199,8 @@ export const createProduct = async (req, res) => {
       description,
       price,
       discount_percentage = 0,
-      stock,
-      sizes,
-      colors,
+      variants, // Array de {size_id, color_id, stock}
+      colorImages, // Array de {color_id, images}
       category_id,
       is_featured = false
     } = req.body;
@@ -159,27 +212,70 @@ export const createProduct = async (req, res) => {
       });
     }
 
-    const images = req.files.map(file => `/uploads/products/${file.filename}`);
-
+    // Crear producto base
     const product = await Product.create({
       name,
       description,
       price,
       discount_percentage,
-      stock,
-      sizes: JSON.parse(sizes),
-      colors: JSON.parse(colors),
-      images,
       category_id,
       is_featured
     });
 
-    const productWithCategory = await Product.findByPk(product.id, {
+    // Crear variantes de producto
+    if (variants && variants.length > 0) {
+      const variantData = JSON.parse(variants).map(variant => ({
+        product_id: product.id,
+        size_id: variant.size_id,
+        color_id: variant.color_id,
+        stock: variant.stock || 0
+      }));
+      
+      await ProductVariant.bulkCreate(variantData);
+    }
+
+    // Crear imágenes por color
+    if (colorImages && req.files) {
+      const colorImageData = JSON.parse(colorImages);
+      const imagePromises = [];
+
+      colorImageData.forEach((colorImg, index) => {
+        if (req.files[index]) {
+          imagePromises.push(
+            ImgColorProduct.create({
+              product_id: product.id,
+              color_id: colorImg.color_id,
+              img: req.files[index].filename
+            })
+          );
+        }
+      });
+
+      await Promise.all(imagePromises);
+    }
+
+    // Obtener producto completo con todas las relaciones
+    const productWithRelations = await Product.findByPk(product.id, {
       include: [
         {
           model: Category,
           as: 'category',
           attributes: ['id', 'name']
+        },
+        {
+          model: ProductVariant,
+          as: 'variants',
+          include: [
+            { model: Size, as: 'size', attributes: ['id', 'name'] },
+            { model: Color, as: 'color', attributes: ['id', 'name', 'hex_code'] }
+          ]
+        },
+        {
+          model: ImgColorProduct,
+          as: 'colorImages',
+          include: [
+            { model: Color, as: 'color', attributes: ['id', 'name'] }
+          ]
         }
       ]
     });
@@ -187,7 +283,7 @@ export const createProduct = async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Producto creado exitosamente',
-      data: { product: productWithCategory }
+      data: { product: productWithRelations }
     });
   } catch (error) {
     console.error('Error creando producto:', error);
@@ -235,39 +331,17 @@ export const updateProduct = async (req, res) => {
       description,
       price,
       discount_percentage,
-      stock,
-      sizes,
-      colors,
       category_id,
       is_featured,
       is_active
     } = req.body;
 
-    let images = product.images;
-
-    if (req.files && req.files.length > 0) {
-      const oldImages = product.images;
-      images = req.files.map(file => `/uploads/products/${file.filename}`);
-      
-      oldImages.forEach(async (imagePath) => {
-        try {
-          const fullPath = path.join(process.cwd(), 'public', imagePath);
-          await fs.unlink(fullPath);
-        } catch (err) {
-          console.error('Error eliminando imagen anterior:', err);
-        }
-      });
-    }
-
+    // Actualizar solo los campos básicos del producto
     await product.update({
       name,
       description,
       price,
       discount_percentage,
-      stock,
-      sizes: sizes ? JSON.parse(sizes) : product.sizes,
-      colors: colors ? JSON.parse(colors) : product.colors,
-      images,
       category_id,
       is_featured,
       is_active
@@ -279,6 +353,21 @@ export const updateProduct = async (req, res) => {
           model: Category,
           as: 'category',
           attributes: ['id', 'name']
+        },
+        {
+          model: ProductVariant,
+          as: 'variants',
+          include: [
+            { model: Size, as: 'size', attributes: ['id', 'name'] },
+            { model: Color, as: 'color', attributes: ['id', 'name', 'hex_code'] }
+          ]
+        },
+        {
+          model: ImgColorProduct,
+          as: 'colorImages',
+          include: [
+            { model: Color, as: 'color', attributes: ['id', 'name'] }
+          ]
         }
       ]
     });
@@ -344,6 +433,21 @@ export const getNewProducts = async (req, res) => {
           model: Category,
           as: 'category',
           attributes: ['id', 'name']
+        },
+        {
+          model: ProductVariant,
+          as: 'variants',
+          include: [
+            { model: Size, as: 'size', attributes: ['id', 'name'] },
+            { model: Color, as: 'color', attributes: ['id', 'name', 'hex_code'] }
+          ]
+        },
+        {
+          model: ImgColorProduct,
+          as: 'colorImages',
+          include: [
+            { model: Color, as: 'color', attributes: ['id', 'name'] }
+          ]
         }
       ],
       order: [['created_at', 'DESC']],
@@ -375,6 +479,21 @@ export const getSaleProducts = async (req, res) => {
           model: Category,
           as: 'category',
           attributes: ['id', 'name']
+        },
+        {
+          model: ProductVariant,
+          as: 'variants',
+          include: [
+            { model: Size, as: 'size', attributes: ['id', 'name'] },
+            { model: Color, as: 'color', attributes: ['id', 'name', 'hex_code'] }
+          ]
+        },
+        {
+          model: ImgColorProduct,
+          as: 'colorImages',
+          include: [
+            { model: Color, as: 'color', attributes: ['id', 'name'] }
+          ]
         }
       ],
       order: [['discount_percentage', 'DESC']]

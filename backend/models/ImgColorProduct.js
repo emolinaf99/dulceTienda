@@ -1,19 +1,15 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/database.js';
 
-const Favorite = sequelize.define('Favorite', {
+const ImgColorProduct = sequelize.define('ImgColorProduct', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true
   },
-  user_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: 'users',
-      key: 'id'
-    }
+  img: {
+    type: DataTypes.STRING(255),
+    allowNull: false
   },
   product_id: {
     type: DataTypes.INTEGER,
@@ -22,16 +18,24 @@ const Favorite = sequelize.define('Favorite', {
       model: 'products',
       key: 'id'
     }
+  },
+  color_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'colors',
+      key: 'id'
+    }
   }
 }, {
-  tableName: 'favorites',
+  tableName: 'img_color_products',
   underscored: true,
   indexes: [
     {
       unique: true,
-      fields: ['user_id', 'product_id']
+      fields: ['img', 'product_id', 'color_id']
     }
   ]
 });
 
-export default Favorite;
+export default ImgColorProduct;
