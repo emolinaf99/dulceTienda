@@ -29,19 +29,18 @@
         let optionsNavbarBurgerMenu = document.querySelectorAll('.site-home a')
         let fondoTransparenteOscuro = document.querySelector('.opacity')
 
-        burgerMenuIcon.addEventListener('click',(event) => {
-            // No ejecutar si estamos en la ruta /admin
-            if (window.location.pathname === '/admin') {
-                return;
-            }
-            abrirYCerrarNavbarBurguerMenu()
-        })
+        // El evento click ya se maneja en Header.vue
+        // Solo mantenemos los otros event listeners
 
         equisBurgerMenu.addEventListener('click',() => {
             abrirYCerrarNavbarBurguerMenu()
         })
 
-        fondoTransparenteOscuro.addEventListener('click',() => {
+        fondoTransparenteOscuro.addEventListener('click',(event) => {
+            // No ejecutar si estamos en la ruta /admin
+            if (window.location.pathname === '/admin') {
+                return;
+            }
             abrirYCerrarNavbarBurguerMenu()
         })
 

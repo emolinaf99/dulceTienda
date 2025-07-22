@@ -28,7 +28,7 @@
     // Función para manejar el clic del burger menu
     const handleBurgerClick = (event) => {
         if (isAdminRoute.value) {
-            // Si estamos en admin, prevenir completamente el comportamiento normal
+            // Si estamos en admin, abrir adminSidebar
             event.preventDefault();
             event.stopPropagation();
             event.stopImmediatePropagation();
@@ -37,8 +37,24 @@
                 window.adminPanelToggleSidebar();
             }
             return false;
+        } else {
+            // Si no es admin, abrir site-home
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const siteHome = document.querySelector('.site-home');
+            const opacity = document.querySelector('.opacity');
+            
+            if (siteHome && opacity) {
+                if (siteHome.classList.contains('activeMain')) {
+                    siteHome.classList.remove('activeMain');
+                    opacity.style.display = 'none';
+                } else {
+                    siteHome.classList.add('activeMain');
+                    opacity.style.display = 'flex';
+                }
+            }
         }
-        // Si no es admin, permitir comportamiento normal (MenuHamburguesaSlide se encarga)
     };
 
     

@@ -128,7 +128,7 @@ onBeforeUnmount(() => {
 
     <!-- Sidebar -->
     <aside class="adminSidebar" :class="{ show: sidebarVisible }">
-      <i class="fa-solid fa-xmark equis"></i>
+      <i class="fa-solid fa-xmark equis" @click="closeSidebar"></i>
       <div class="adminSidebarHeader">
         <h2>Admin Panel</h2>
         <p style="color: #666; margin: 0.5rem 0 0; font-size: 0.9rem;">
