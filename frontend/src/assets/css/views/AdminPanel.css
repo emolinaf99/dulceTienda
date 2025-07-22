@@ -13,14 +13,18 @@
   background-color: white;
   border-right: 1px solid #e0e0e0;
   position: fixed;
-  top: 6rem;
-  left: 0;
-  height: calc(100vh - 6rem);
+  top: 0;
+  left: -280px; /* Oculto por defecto en desktop también */
+  height: calc(100vh);
   overflow-y: auto;
   z-index: 9999999; /* Por encima de opacity (z-index: 11) pero debajo del header */
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
   overflow-y:scroll;
   transition: all .5s ease ;
+}
+
+.adminSidebar.show {
+  left: 0; /* Mostrar sidebar cuando tiene clase 'show' */
 }
 
 .adminSidebarHeader {
@@ -70,9 +74,17 @@
 }
 
 .adminContent {
-  margin-left: 280px;
+  margin-left: 0; /* Sin margen por defecto */
   flex: 1;
   padding: 2rem;
+  transition: margin-left .5s ease; /* Transición suave */
+  width: 100%; /* Ocupa 100% del ancho disponible */
+}
+
+/* Cuando el sidebar está visible, el contenido se desplaza */
+.adminPanel.sidebar-open .adminContent {
+  margin-left: 280px;
+  width: calc(100% - 280px);
 }
 
 .adminContentHeader {
@@ -795,44 +807,175 @@
 }
 
 @media screen and (max-width: 768px) {
-  /* Hide less important columns on mobile */
-  .adminProducts .adminTable th:nth-child(3), /* SKU */
-  .adminProducts .adminTable td:nth-child(3),
-  .adminProducts .adminTable th:nth-child(8), /* Date */
-  .adminProducts .adminTable td:nth-child(8) {
-    display: none;
+  /* Mejorar tablas para móviles manteniendo todas las columnas */
+  .adminTableWrapper {
+    margin-bottom: 1rem;
   }
   
-  /* Adjust remaining columns */
+  .adminTable {
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+  
+  .adminTable th,
+  .adminTable td {
+    padding: 0.75rem 0.5rem;
+    vertical-align: top;
+  }
+  
+  /* Columnas específicas más estrechas en móvil */
+  .adminTable th:first-child,
+  .adminTable td:first-child {
+    width: 60px;
+    min-width: 60px;
+  }
+  
+  .adminTable th:last-child,
+  .adminTable td:last-child {
+    width: 120px;
+    min-width: 120px;
+    position: sticky;
+    right: 0;
+    background: white;
+    box-shadow: -2px 0 4px rgba(0,0,0,0.1);
+  }
+  
+  .adminTable thead th:last-child {
+    background: #f8f9fa;
+  }
+  
+  /* Botones de acción mejorados */
+  .adminTableActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    justify-content: center;
+  }
+  
+  .adminTableActions .adminBtn {
+    padding: 0.4rem 0.5rem;
+    font-size: 0.75rem;
+    min-width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Indicador de scroll horizontal */
+  .adminTableWrapper::after {
+    content: '← Desliza para ver más →';
+    position: absolute;
+    bottom: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.7rem;
+    color: #666;
+    background: rgba(248, 249, 250, 0.9);
+    padding: 0.25rem 0.5rem;
+    border-radius: 10px;
+    z-index: 1;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  
+  /* Mantener todas las columnas visibles con anchos mínimos */
   .adminProducts .adminTable th:nth-child(2),
   .adminProducts .adminTable td:nth-child(2) {
     min-width: 150px;
   }
-}
-
-/* Categories table responsive */
-@media screen and (max-width: 768px) {
-  .adminCategories .adminTable th:nth-child(5), /* Date */
-  .adminCategories .adminTable td:nth-child(5) {
-    display: none;
+  
+  .adminProducts .adminTable th:nth-child(3),
+  .adminProducts .adminTable td:nth-child(3) {
+    min-width: 100px;
+  }
+  
+  .adminProducts .adminTable th:nth-child(4),
+  .adminProducts .adminTable td:nth-child(4) {
+    min-width: 120px;
+  }
+  
+  .adminProducts .adminTable th:nth-child(5),
+  .adminProducts .adminTable td:nth-child(5) {
+    min-width: 100px;
+  }
+  
+  .adminProducts .adminTable th:nth-child(6),
+  .adminProducts .adminTable td:nth-child(6) {
+    min-width: 80px;
+  }
+  
+  .adminProducts .adminTable th:nth-child(7),
+  .adminProducts .adminTable td:nth-child(7) {
+    min-width: 90px;
+  }
+  
+  .adminProducts .adminTable th:nth-child(8),
+  .adminProducts .adminTable td:nth-child(8) {
+    min-width: 100px;
   }
 }
 
-/* Users table responsive */
-@media screen and (max-width: 768px) {
-  .adminUsers .adminTable th:nth-child(3), /* Phone */
-  .adminUsers .adminTable td:nth-child(3),
-  .adminUsers .adminTable th:nth-child(7), /* Last login */
-  .adminUsers .adminTable td:nth-child(7) {
-    display: none;
-  }
+/* Categories table responsive - mantener todas las columnas */
+.adminCategories .adminTable th:nth-child(1),
+.adminCategories .adminTable td:nth-child(1) {
+  min-width: 120px;
 }
 
-@media screen and (max-width: 480px) {
-  .adminUsers .adminTable th:nth-child(6), /* Registration date */
-  .adminUsers .adminTable td:nth-child(6) {
-    display: none;
-  }
+.adminCategories .adminTable th:nth-child(2),
+.adminCategories .adminTable td:nth-child(2) {
+  min-width: 150px;
+}
+
+.adminCategories .adminTable th:nth-child(3),
+.adminCategories .adminTable td:nth-child(3) {
+  min-width: 80px;
+}
+
+.adminCategories .adminTable th:nth-child(4),
+.adminCategories .adminTable td:nth-child(4) {
+  min-width: 90px;
+}
+
+.adminCategories .adminTable th:nth-child(5),
+.adminCategories .adminTable td:nth-child(5) {
+  min-width: 100px;
+}
+
+/* Users table responsive - mantener todas las columnas */
+.adminUsers .adminTable th:nth-child(1),
+.adminUsers .adminTable td:nth-child(1) {
+  min-width: 150px;
+}
+
+.adminUsers .adminTable th:nth-child(2),
+.adminUsers .adminTable td:nth-child(2) {
+  min-width: 180px;
+}
+
+.adminUsers .adminTable th:nth-child(3),
+.adminUsers .adminTable td:nth-child(3) {
+  min-width: 120px;
+}
+
+.adminUsers .adminTable th:nth-child(4),
+.adminUsers .adminTable td:nth-child(4) {
+  min-width: 100px;
+}
+
+.adminUsers .adminTable th:nth-child(5),
+.adminUsers .adminTable td:nth-child(5) {
+  min-width: 90px;
+}
+
+.adminUsers .adminTable th:nth-child(6),
+.adminUsers .adminTable td:nth-child(6) {
+  min-width: 100px;
+}
+
+.adminUsers .adminTable th:nth-child(7),
+.adminUsers .adminTable td:nth-child(7) {
+  min-width: 110px;
 }
 
 /* Dashboard responsive improvements */
@@ -866,11 +1009,35 @@
   -webkit-overflow-scrolling: touch;
   border-radius: 8px;
   border: 1px solid #e0e0e0;
+  position: relative;
+}
+
+.adminTableWrapper::-webkit-scrollbar {
+  height: 8px;
+}
+
+.adminTableWrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.adminTableWrapper::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.adminTableWrapper::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 
 .adminTableWrapper .adminTable {
   border: none;
   margin: 0;
+}
+
+/* Vista de tarjetas para móviles - oculta por defecto */
+.adminCardView {
+  display: none;
 }
 
 /* Print styles */
@@ -891,5 +1058,13 @@
     box-shadow: none !important;
     border: 1px solid #ccc !important;
     break-inside: avoid;
+  }
+}
+
+/* Sobrescribir para móviles - el contenido siempre ocupa 100% */
+@media screen and (max-width: 768px) {
+  .adminPanel.sidebar-open .adminContent {
+    margin-left: 0 !important;
+    width: 100% !important;
   }
 }

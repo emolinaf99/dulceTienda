@@ -210,7 +210,7 @@ header {
     } 
 
     .s1Header {
-        padding: 1rem 4rem;
+        padding: 1rem 2rem;
     }
 
     #navbarCategorias {
@@ -228,6 +228,11 @@ header {
 
     #burgerMenuIcon {
         display: none;
+    }
+
+    /* Mostrar burger menu en desktop para rutas de admin */
+    body[data-route="/admin"] #burgerMenuIcon {
+        display: flex !important;
     }
 
     

@@ -99,6 +99,9 @@ onMounted(() => {
   if (!isAdmin.value) {
     router.push('/');
   }
+  
+  // Añadir data-route al body para CSS condicional
+  document.body.setAttribute('data-route', '/admin');
 });
 
 // Watch for authentication changes
@@ -120,11 +123,14 @@ onBeforeUnmount(() => {
     opacity.removeEventListener('click', closeSidebar);
     opacity.style.display = 'none';
   }
+  
+  // Limpiar data-route del body al salir
+  document.body.removeAttribute('data-route');
 });
 </script>
 
 <template>
-  <div class="adminPanel" v-if="isAdmin">
+  <div class="adminPanel" v-if="isAdmin" :class="{ 'sidebar-open': sidebarVisible }">
 
     <!-- Sidebar -->
     <aside class="adminSidebar" :class="{ show: sidebarVisible }">
