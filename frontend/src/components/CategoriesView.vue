@@ -3,6 +3,10 @@
   import {reactive,ref,onMounted, watch} from 'vue'
   import { RouterLink, RouterView, useRoute} from 'vue-router'
   import {scrollearConClick} from '/src/js/scrollWithClick'
+  import { useCategories } from '../js/composables/useCategories.js';
+
+  // Usar el composable de categorías
+  const { categories, loading, error } = useCategories();
 
   onMounted(() => {
     let contenedorScroll = document.querySelector('.vitrinaSlide')
@@ -35,30 +39,24 @@
       <div class="sectionSlide">
         
         <div class="vitrinaSlide">
-          <RouterLink to="/" class="blockCategory">
-            <img src="/img/camisetas.png" alt="Camisetas">
-            <p>Camisetas</p>
+          <RouterLink 
+            v-for="category in categories"
+            :to="`/category/${category.id}`"
+            class="blockCategory"
+            :key="category.id"
+          >
+            <img 
+              v-if="!category.image"
+              :src="`/img/percha.png`" 
+            >
+            <img 
+              v-else
+              :src="`/img/${category.image}`" 
+            >
+
+            <p>{{ category.name }}</p>
           </RouterLink>
-          <RouterLink to="/" class="blockCategory">
-            <img src="/img/buzos.jpg" alt="Buzos">
-            <p>Buzos</p>
-          </RouterLink>
-          <RouterLink to="/" class="blockCategory">
-            <img src="/img/leggins.png" alt="Leggins">
-            <p>Leggins</p>
-          </RouterLink>
-          <RouterLink to="/" class="blockCategory">
-            <img src="/img/camisetas.png" alt="Camisetas">
-            <p>Camisetas</p>
-          </RouterLink>
-          <RouterLink to="/" class="blockCategory">
-            <img src="/img/buzos.jpg" alt="Buzos">
-            <p>Buzos</p>
-          </RouterLink>
-          <RouterLink to="/" class="blockCategory">
-            <img src="/img/leggins.png" alt="Leggins">
-            <p>Leggins</p>
-          </RouterLink>
+          
         </div>
       </div>
     </div>

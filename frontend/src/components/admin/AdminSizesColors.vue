@@ -335,7 +335,7 @@ onMounted(() => {
         </h3>
       </div>
       
-      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2rem;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
         <div>
           <h4 style="color: #333; margin-bottom: 1rem;">
             <i class="fas fa-layer-group" style="margin-right: 0.5rem; color: #6f42c1;"></i>

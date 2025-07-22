@@ -171,7 +171,7 @@ const createDefaultAdmin = async () => {
       await User.create({
         email: 'admin@dulcetienda.com',
         password: 'Admin123!',
-        first_name: 'Administrador',
+        first_name: 'Admin',
         last_name: 'Sistema',
         role: 'admin',
         phone: '1234567890'

@@ -317,7 +317,7 @@ onMounted(() => {
 
     <!-- Products Table -->
     <div v-else-if="products.length > 0" class="adminCard">
-      <div style="overflow-x: auto;">
+      <div class="adminTableWrapper">
         <table class="adminTable">
           <thead>
             <tr>
@@ -488,7 +488,7 @@ onMounted(() => {
             <textarea v-model="productForm.description" rows="3"></textarea>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="adminFormRow">
             <div class="adminFormGroup">
               <label>Precio *</label>
               <input v-model="productForm.price" type="number" step="0.01" required />
@@ -500,7 +500,7 @@ onMounted(() => {
             </div>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="adminFormRow">
             <div class="adminFormGroup">
               <label>Stock *</label>
               <input v-model="productForm.stock" type="number" min="0" required />

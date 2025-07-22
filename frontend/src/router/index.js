@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useUserStore } from '@/js/stores/userLogged.js'
 import HomeView from '../views/HomeView.vue'
 
 
@@ -72,21 +71,30 @@ function scrollToTop() {
 
 // Guardia global beforeEach para autenticación y autorización
 router.beforeEach((to) => {
-  const userStore = useUserStore();
-  
-  // Cargar usuario del localStorage si no está cargado
-  if (!userStore.isLoggedIn) {
-    userStore.loadUserFromStorage();
-  }
-  
-  // Verificar si la ruta requiere autenticación
-  if (to.meta.requiresAuth && !userStore.isLoggedIn) {
-    return { name: 'Login' };
-  }
-  
-  // Verificar si la ruta requiere rol de administrador
-  if (to.meta.requiresAdmin && userStore.getUserRole !== 'admin') {
-    return { name: 'Home' };
+  // Solo aplicar guards si la ruta requiere autenticación o es admin
+  if (to.meta.requiresAuth || to.meta.requiresAdmin) {
+    // Verificar localStorage directamente sin usar el store fuera del contexto
+    const token = localStorage.getItem('authToken');
+    const userData = localStorage.getItem('user');
+    
+    if (!token || !userData || userData === 'undefined' || userData === 'null') {
+      if (to.meta.requiresAuth) {
+        return { name: 'Login' };
+      }
+    }
+    
+    try {
+      const user = JSON.parse(userData);
+      
+      if (to.meta.requiresAdmin && user?.role !== 'admin') {
+        return { name: 'Home' };
+      }
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+      if (to.meta.requiresAuth) {
+        return { name: 'Login' };
+      }
+    }
   }
   
   return true;

@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue';
 import { useAdminApi } from '@/js/composables/useAdminApi.js';
 
+const emit = defineEmits(['change-section']);
 const { getDashboardStats, loading, error } = useAdminApi();
 
 // State
@@ -112,22 +113,22 @@ onMounted(() => {
         </div>
         
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-          <button class="adminBtn adminBtnPrimary" @click="$parent.setActiveSection('products')" style="padding: 1rem;">
+          <button class="adminBtn adminBtnPrimary" @click="emit('change-section', 'products')" style="padding: 1rem;">
             <i class="fas fa-plus" style="display: block; font-size: 1.5rem; margin-bottom: 0.5rem;"></i>
             Nuevo Producto
           </button>
           
-          <button class="adminBtn adminBtnSuccess" @click="$parent.setActiveSection('categories')" style="padding: 1rem;">
+          <button class="adminBtn adminBtnSuccess" @click="emit('change-section', 'categories')" style="padding: 1rem;">
             <i class="fas fa-tag" style="display: block; font-size: 1.5rem; margin-bottom: 0.5rem;"></i>
             Nueva Categoría
           </button>
           
-          <button class="adminBtn adminBtnSecondary" @click="$parent.setActiveSection('users')" style="padding: 1rem;">
+          <button class="adminBtn adminBtnSecondary" @click="emit('change-section', 'users')" style="padding: 1rem;">
             <i class="fas fa-user" style="display: block; font-size: 1.5rem; margin-bottom: 0.5rem;"></i>
             Ver Usuarios
           </button>
           
-          <button class="adminBtn adminBtnWarning" @click="$parent.setActiveSection('sizes-colors')" style="padding: 1rem;">
+          <button class="adminBtn adminBtnWarning" @click="emit('change-section', 'sizes-colors')" style="padding: 1rem;">
             <i class="fas fa-palette" style="display: block; font-size: 1.5rem; margin-bottom: 0.5rem;"></i>
             Tallas y Colores
           </button>

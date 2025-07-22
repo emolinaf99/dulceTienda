@@ -157,7 +157,7 @@ onMounted(() => {
 
     <!-- Users Table -->
     <div v-else-if="users.length > 0" class="adminCard">
-      <div style="overflow-x: auto;">
+      <div class="adminTableWrapper">
         <table class="adminTable">
           <thead>
             <tr>

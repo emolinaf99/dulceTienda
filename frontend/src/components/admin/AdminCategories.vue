@@ -194,7 +194,8 @@ onMounted(() => {
 
     <!-- Categories Table -->
     <div v-else-if="categories.length > 0" class="adminCard">
-      <table class="adminTable">
+      <div class="adminTableWrapper">
+        <table class="adminTable">
         <thead>
           <tr>
             <th>Nombre</th>
@@ -266,6 +267,7 @@ onMounted(() => {
           </tr>
         </tbody>
       </table>
+      </div>
 
       <!-- Pagination -->
       <div class="adminPagination" v-if="pagination.totalPages > 1">

@@ -1,9 +1,11 @@
 <script setup>
     import {reactive,ref,onMounted, watch} from 'vue'
     import { useCategories } from '../js/composables/useCategories.js'
+    import { useRoute } from 'vue-router'
 
     // Usar el composable de categorías
     const { categories, loading, error } = useCategories();
+    const route = useRoute();
 
     onMounted(() => {
         
@@ -27,7 +29,11 @@
         let optionsNavbarBurgerMenu = document.querySelectorAll('.site-home a')
         let fondoTransparenteOscuro = document.querySelector('.opacity')
 
-        burgerMenuIcon.addEventListener('click',() => {
+        burgerMenuIcon.addEventListener('click',(event) => {
+            // No ejecutar si estamos en la ruta /admin
+            if (window.location.pathname === '/admin') {
+                return;
+            }
             abrirYCerrarNavbarBurguerMenu()
         })
 

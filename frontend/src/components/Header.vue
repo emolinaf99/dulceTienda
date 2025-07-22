@@ -1,5 +1,5 @@
 <script setup>
-    import {reactive,ref,onMounted, watch, computed} from 'vue'
+    import {reactive,ref,onMounted, watch, computed, nextTick} from 'vue'
     import { RouterLink, RouterView, useRoute, useRouter} from 'vue-router'
     import MenuHamburguesaSlide from '../components/MenuHamburguesaSlide.vue'
     import { useUserStore } from '../js/stores/userLogged.js';
@@ -12,6 +12,9 @@
     const route = useRoute()
     const router = useRouter()
 
+    // Detectar si estamos en la ruta de admin
+    const isAdminRoute = computed(() => route.path === '/admin');
+
     // Usar el composable de categorías
     const { categories, loading, error } = useCategories();
 
@@ -20,6 +23,22 @@
     const handleLogout = () => {
         userStore.logout();
         router.push('/');
+    };
+
+    // Función para manejar el clic del burger menu
+    const handleBurgerClick = (event) => {
+        if (isAdminRoute.value) {
+            // Si estamos en admin, prevenir completamente el comportamiento normal
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            
+            if (window.adminPanelToggleSidebar) {
+                window.adminPanelToggleSidebar();
+            }
+            return false;
+        }
+        // Si no es admin, permitir comportamiento normal (MenuHamburguesaSlide se encarga)
     };
 
     
@@ -36,18 +55,13 @@
     </section>
     <section class="s1Header">
         <div class="bloque_logo_burguerMenu">
-            <i class="fa-solid fa-bars" id="burgerMenuIcon"></i>
+            <i class="fa-solid fa-bars" id="burgerMenuIcon" @click="handleBurgerClick"></i>
             <RouterLink to="/"><img class="logoApp" src="/img/logoDulceEjemplo.jpg" alt=""></RouterLink>
             
         </div>
 
         <div class="navbar">
             <RouterLink to="/"><button class="botonHeader">Mayoristas</button></RouterLink>
-            
-            <!-- Admin Panel Link (solo para administradores) -->
-            <RouterLink to="/admin" v-if="isAdmin" title="Panel de Administración" style="display: flex; align-items: center; padding: 5px; background: #333; border-radius: 3px; color: white; text-decoration: none;">
-                <i class="fas fa-cog" style="font-size: 16px;"></i>
-            </RouterLink>
             
             <!-- Si no está logueado -->
             <RouterLink to="/login" v-if="!isLoggedIn">
@@ -59,6 +73,11 @@
                 <span class="user-name">{{ userLogged?.first_name || userLogged?.email }}</span>
                 
             </div>
+
+            <!-- Admin Panel Link (solo para administradores) -->
+            <RouterLink to="/admin" v-if="isAdmin" title="Panel de Administración" style="display: flex; align-items: center; padding: 5px; background: #333; border-radius: 3px; color: white; text-decoration: none;">
+                <i class="fas fa-cog" style="font-size: 16px;"></i>
+            </RouterLink>
             
             <RouterLink to="/wishlist"><img src="/img/heartIcon.png" title="Favoritos"></RouterLink>
             <RouterLink to="/cart"><img src="/img/shoppingBag.png" title="Carrito"></RouterLink>

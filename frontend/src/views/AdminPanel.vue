@@ -2,7 +2,6 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUserStore } from '@/js/stores/userLogged.js';
-import { useAdminApi } from '@/js/composables/useAdminApi.js';
 
 // Components
 import AdminDashboard from '@/components/admin/AdminDashboard.vue';
@@ -13,7 +12,6 @@ import AdminSizesColors from '@/components/admin/AdminSizesColors.vue';
 
 const router = useRouter();
 const userStore = useUserStore();
-const { loading, error } = useAdminApi();
 
 // State
 const activeSection = ref('dashboard');
@@ -56,12 +54,40 @@ const navItems = [
 // Methods
 const setActiveSection = (section) => {
   activeSection.value = section;
-  sidebarVisible.value = false;
+  closeSidebar(); // Usar la función closeSidebar para cerrar correctamente
 };
 
-const toggleSidebar = () => {
-  sidebarVisible.value = !sidebarVisible.value;
+// Método para manejar eventos externos del header
+const handleSidebarToggle = () => {
+  const newState = !sidebarVisible.value;
+  sidebarVisible.value = newState;
+  
+  // Controlar el fondo de opacity cuando se abre/cierra el sidebar
+  const opacity = document.querySelector('.opacity');
+  if (opacity) {
+    if (newState) {
+      opacity.style.display = 'flex';
+      // Agregar event listener para cerrar el sidebar al hacer clic en opacity
+      opacity.addEventListener('click', closeSidebar);
+    } else {
+      opacity.style.display = 'none';
+      opacity.removeEventListener('click', closeSidebar);
+    }
+  }
 };
+
+// Función para cerrar sidebar
+const closeSidebar = () => {
+  sidebarVisible.value = false;
+  const opacity = document.querySelector('.opacity');
+  if (opacity) {
+    opacity.style.display = 'none';
+    opacity.removeEventListener('click', closeSidebar);
+  }
+};
+
+// Exponer métodos para uso externo
+window.adminPanelToggleSidebar = handleSidebarToggle;
 
 const logout = () => {
   userStore.logout();
@@ -82,29 +108,27 @@ const stopWatching = userStore.$subscribe(() => {
   }
 });
 
-// Clean up watcher
+// Clean up watcher and exposed methods
 import { onBeforeUnmount } from 'vue';
 onBeforeUnmount(() => {
   stopWatching();
+  delete window.adminPanelToggleSidebar;
+  
+  // Limpiar event listeners de opacity
+  const opacity = document.querySelector('.opacity');
+  if (opacity) {
+    opacity.removeEventListener('click', closeSidebar);
+    opacity.style.display = 'none';
+  }
 });
 </script>
 
 <template>
   <div class="adminPanel" v-if="isAdmin">
-    <!-- Mobile Header -->
-    <div class="adminPanelMobileHeader" style="display: none;">
-      <button @click="toggleSidebar" class="adminMenuToggle">
-        <i class="fas fa-bars"></i>
-      </button>
-      <h1>Panel de Administración</h1>
-      <button @click="logout" class="adminBtn adminBtnSecondary adminBtnSmall">
-        <i class="fas fa-sign-out-alt"></i>
-        Salir
-      </button>
-    </div>
 
     <!-- Sidebar -->
     <aside class="adminSidebar" :class="{ show: sidebarVisible }">
+      <i class="fa-solid fa-xmark equis"></i>
       <div class="adminSidebarHeader">
         <h2>Admin Panel</h2>
         <p style="color: #666; margin: 0.5rem 0 0; font-size: 0.9rem;">
@@ -143,27 +167,15 @@ onBeforeUnmount(() => {
         </button>
       </div>
 
-      <!-- Error Alert -->
-      <div v-if="error" class="adminAlert adminAlertError">
-        <i class="fas fa-exclamation-triangle"></i>
-        {{ error }}
-      </div>
 
       <!-- Content Sections -->
-      <AdminDashboard v-if="activeSection === 'dashboard'" />
+      <AdminDashboard v-if="activeSection === 'dashboard'" @change-section="setActiveSection" />
       <AdminProducts v-if="activeSection === 'products'" />
       <AdminCategories v-if="activeSection === 'categories'" />
       <AdminUsers v-if="activeSection === 'users'" />
       <AdminSizesColors v-if="activeSection === 'sizes-colors'" />
     </main>
 
-    <!-- Sidebar Overlay for Mobile -->
-    <div 
-      v-if="sidebarVisible" 
-      class="adminSidebarOverlay"
-      style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 49;"
-      @click="sidebarVisible = false"
-    ></div>
   </div>
 
   <!-- Not authorized -->
