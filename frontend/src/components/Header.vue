@@ -8,6 +8,7 @@
     const userStore = useUserStore();
     const userLogged = computed(() => userStore.userLogged);
     const isLoggedIn = computed(() => userStore.isLoggedIn);
+    const isAdmin = computed(() => userStore.getUserRole === 'admin');
     const route = useRoute()
     const router = useRouter()
 
@@ -42,6 +43,11 @@
 
         <div class="navbar">
             <RouterLink to="/"><button class="botonHeader">Mayoristas</button></RouterLink>
+            
+            <!-- Admin Panel Link (solo para administradores) -->
+            <RouterLink to="/admin" v-if="isAdmin" title="Panel de Administración" style="display: flex; align-items: center; padding: 5px; background: #333; border-radius: 3px; color: white; text-decoration: none;">
+                <i class="fas fa-cog" style="font-size: 16px;"></i>
+            </RouterLink>
             
             <!-- Si no está logueado -->
             <RouterLink to="/login" v-if="!isLoggedIn">

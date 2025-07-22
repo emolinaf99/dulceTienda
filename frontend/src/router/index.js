@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useUserStore } from '@/js/stores/userLogged.js'
 import HomeView from '../views/HomeView.vue'
 
 
@@ -47,6 +48,15 @@ const router = createRouter({
       component: () => import('../views/CategoryDetail.vue'),
       props: true // Pasar el parámetro 'id' como prop al componente
     },
+    {
+      path: '/admin',
+      name: 'AdminPanel',
+      component: () => import('../views/AdminPanel.vue'),
+      meta: {
+        requiresAuth: true,
+        requiresAdmin: true
+      }
+    },
 
   ]
 })
@@ -59,6 +69,28 @@ function scrollToTop() {
   });
 }
 
+
+// Guardia global beforeEach para autenticación y autorización
+router.beforeEach((to) => {
+  const userStore = useUserStore();
+  
+  // Cargar usuario del localStorage si no está cargado
+  if (!userStore.isLoggedIn) {
+    userStore.loadUserFromStorage();
+  }
+  
+  // Verificar si la ruta requiere autenticación
+  if (to.meta.requiresAuth && !userStore.isLoggedIn) {
+    return { name: 'Login' };
+  }
+  
+  // Verificar si la ruta requiere rol de administrador
+  if (to.meta.requiresAdmin && userStore.getUserRole !== 'admin') {
+    return { name: 'Home' };
+  }
+  
+  return true;
+});
 
 // Guardia global afterEach para ejecutar scrollToTop en cada cambio de ruta
 router.afterEach(() => {

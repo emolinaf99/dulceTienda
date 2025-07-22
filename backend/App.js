@@ -17,6 +17,7 @@ import favoriteRoutes from './routes/favorites.js';
 import sizeRoutes from './routes/sizes.js';
 import colorRoutes from './routes/colors.js';
 import typeSizeRoutes from './routes/typeSizes.js';
+import adminRoutes from './routes/admin.js';
 
 // Importar controlador de correos
 import { enviarCorreoContacto } from './controllers/emailController.js';
@@ -62,6 +63,7 @@ app.use('/api/favorites', favoriteRoutes);
 app.use('/api/sizes', sizeRoutes);
 app.use('/api/colors', colorRoutes);
 app.use('/api/type-sizes', typeSizeRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Ruta para envío de correos de contacto
 app.post('/api/enviarCorreo', enviarCorreoContacto);

@@ -2,11 +2,11 @@
   "name": "dulcetienda-backend",
   "version": "1.0.0",
   "description": "Backend para la plataforma e-commerce DulceTienda",
-  "main": "App.js",
+  "main": "app.js",
   "type": "module",
   "scripts": {
-    "start": "node App.js",
-    "dev": "nodemon App.js",
+    "start": "node app.js",
+    "dev": "nodemon app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

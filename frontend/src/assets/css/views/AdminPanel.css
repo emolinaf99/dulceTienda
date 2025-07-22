@@ -1,0 +1,517 @@
+/* Admin Panel Styles */
+.adminPanel {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  font-family: 'Roboto';
+  margin-top: 6rem;
+  background-color: #f8f9fa;
+}
+
+.adminSidebar {
+  width: 280px;
+  background-color: white;
+  border-right: 1px solid #e0e0e0;
+  position: fixed;
+  top: 6rem;
+  left: 0;
+  height: calc(100vh - 6rem);
+  overflow-y: auto;
+  z-index: 50;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.adminSidebarHeader {
+  padding: 2rem 1.5rem 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.adminSidebarHeader h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.adminSidebarNav {
+  padding: 1rem 0;
+}
+
+.adminSidebarItem {
+  display: block;
+  padding: 1rem 1.5rem;
+  color: #666;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.adminSidebarItem:hover {
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.adminSidebarItem.active {
+  background-color: black;
+  color: white;
+}
+
+.adminSidebarItem i {
+  margin-right: 0.75rem;
+  width: 20px;
+  text-align: center;
+}
+
+.adminContent {
+  margin-left: 280px;
+  flex: 1;
+  padding: 2rem;
+}
+
+.adminContentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.adminContentHeader h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.adminCard {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.adminCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.adminCardHeader h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.adminBtn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+}
+
+.adminBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.adminBtnPrimary {
+  background-color: black;
+  color: white;
+}
+
+.adminBtnPrimary:hover:not(:disabled) {
+  background-color: #333;
+}
+
+.adminBtnSecondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.adminBtnSecondary:hover:not(:disabled) {
+  background-color: #5a6268;
+}
+
+.adminBtnSuccess {
+  background-color: #28a745;
+  color: white;
+}
+
+.adminBtnSuccess:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.adminBtnDanger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.adminBtnDanger:hover:not(:disabled) {
+  background-color: #c82333;
+}
+
+.adminBtnWarning {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.adminBtnWarning:hover:not(:disabled) {
+  background-color: #e0a800;
+}
+
+.adminBtnSmall {
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+}
+
+.adminTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.adminTable th,
+.adminTable td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.adminTable th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #333;
+}
+
+.adminTable tr:hover {
+  background-color: #f8f9fa;
+}
+
+.adminTableActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.adminFormGroup {
+  margin-bottom: 1.5rem;
+}
+
+.adminFormGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.adminFormGroup input,
+.adminFormGroup select,
+.adminFormGroup textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+.adminFormGroup input:focus,
+.adminFormGroup select:focus,
+.adminFormGroup textarea:focus {
+  outline: none;
+  border-color: #333;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.adminFormGroup textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.adminAlert {
+  padding: 1rem;
+  border-radius: 5px;
+  margin-bottom: 1rem;
+}
+
+.adminAlertError {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.adminAlertSuccess {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.adminAlertWarning {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.adminLoading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem;
+}
+
+.adminSpinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #333;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.adminStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.adminStatCard {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.adminStatCard h3 {
+  font-size: 2rem;
+  font-weight: 600;
+  margin: 0;
+  color: #333;
+}
+
+.adminStatCard p {
+  color: #666;
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+}
+
+.adminPagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding: 1rem;
+}
+
+.adminPaginationBtn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  background: white;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: all 0.3s ease;
+}
+
+.adminPaginationBtn:hover:not(:disabled) {
+  background-color: #f5f5f5;
+}
+
+.adminPaginationBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.adminPaginationBtn.active {
+  background-color: black;
+  color: white;
+  border-color: black;
+}
+
+.adminSearchBar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.adminSearchBar input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+.adminSearchBar select {
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 5px;
+  font-size: 1rem;
+  background: white;
+}
+
+.adminModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.adminModalContent {
+  background: white;
+  border-radius: 8px;
+  padding: 2rem;
+  max-width: 600px;
+  width: 90%;
+  max-height: 90%;
+  overflow-y: auto;
+}
+
+.adminModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.adminModalHeader h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.adminCloseBtn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.adminCloseBtn:hover {
+  color: #333;
+}
+
+.adminModalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* Mobile responsive */
+@media screen and (max-width: 1024px) {
+  .adminSidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .adminSidebar.show {
+    transform: translateX(0);
+  }
+
+  .adminContent {
+    margin-left: 0;
+  }
+
+  .adminPanelMobileHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background: white;
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 2rem;
+  }
+
+  .adminMenuToggle {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #333;
+  }
+
+  .adminStatsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .adminSearchBar {
+    flex-direction: column;
+  }
+
+  .adminTableActions {
+    flex-direction: column;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .adminContent {
+    padding: 1rem;
+  }
+
+  .adminCard {
+    padding: 1rem;
+  }
+
+  .adminTable {
+    font-size: 0.9rem;
+  }
+
+  .adminTable th,
+  .adminTable td {
+    padding: 0.5rem;
+  }
+
+  .adminContentHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .adminContentHeader h1 {
+    font-size: 1.5rem;
+  }
+
+  .adminModalContent {
+    padding: 1rem;
+    width: 95%;
+  }
+}
