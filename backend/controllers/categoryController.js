@@ -56,35 +56,45 @@ export const getAllCategories = async (req, res) => {
 export const getCategoryById = async (req, res) => {
   try {
     const { id } = req.params;
+    const { 
+      sizes, 
+      colors, 
+      minPrice, 
+      maxPrice, 
+      page = 1, 
+      limit = 12,
+      sortBy = 'created_at',
+      sortOrder = 'DESC'
+    } = req.query;
 
+    // Construir filtros para productos
+    const productWhere = { is_active: true };
+    const variantWhere = {};
+
+    // Filtros de precio
+    if (minPrice || maxPrice) {
+      productWhere.price = {};
+      if (minPrice) productWhere.price[Op.gte] = parseFloat(minPrice);
+      if (maxPrice) productWhere.price[Op.lte] = parseFloat(maxPrice);
+    }
+
+    // Filtros de tallas y colores (aplicados a variants)
+    if (sizes) {
+      const sizeArray = Array.isArray(sizes) ? sizes : [sizes];
+      variantWhere.size_id = { [Op.in]: sizeArray };
+    }
+
+    if (colors) {
+      const colorArray = Array.isArray(colors) ? colors : [colors];
+      variantWhere.color_id = { [Op.in]: colorArray };
+    }
+
+    const offset = (page - 1) * limit;
+
+    // Primero obtener la categoría básica
     const category = await Category.findOne({
       where: { id, is_active: true },
-      include: [
-        {
-          model: Product,
-          as: 'products',
-          where: { is_active: true },
-          required: false,
-          attributes: ['id', 'name', 'price', 'discount_percentage'],
-          include: [
-            {
-              model: ProductVariant,
-              as: 'variants',
-              include: [
-                { model: Size, as: 'size', attributes: ['id', 'name'] },
-                { model: Color, as: 'color', attributes: ['id', 'name', 'hex_code'] }
-              ]
-            },
-            {
-              model: ImgColorProduct,
-              as: 'colorImages',
-              include: [
-                { model: Color, as: 'color', attributes: ['id', 'name'] }
-              ]
-            }
-          ]
-        }
-      ]
+      attributes: ['id', 'name', 'description', 'image', 'type_size_id']
     });
 
     if (!category) {
@@ -94,9 +104,95 @@ export const getCategoryById = async (req, res) => {
       });
     }
 
+    // Luego obtener productos con filtros y paginación
+    const { count, rows: products } = await Product.findAndCountAll({
+      where: { ...productWhere, category_id: id },
+      include: [
+        {
+          model: ProductVariant,
+          as: 'variants',
+          where: Object.keys(variantWhere).length > 0 ? variantWhere : undefined,
+          required: Object.keys(variantWhere).length > 0,
+          include: [
+            { model: Size, as: 'size', attributes: ['id', 'name'] },
+            { model: Color, as: 'color', attributes: ['id', 'name', 'hex_code'] }
+          ]
+        },
+        {
+          model: ImgColorProduct,
+          as: 'colorImages',
+          include: [
+            { model: Color, as: 'color', attributes: ['id', 'name'] }
+          ]
+        }
+      ],
+      order: [[sortBy, sortOrder.toUpperCase()]],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      distinct: true
+    });
+
+    // Obtener todas las tallas y colores disponibles para esta categoría (para filtros)
+    const availableFilters = await Product.findAll({
+      where: { category_id: id, is_active: true },
+      include: [
+        {
+          model: ProductVariant,
+          as: 'variants',
+          include: [
+            { model: Size, as: 'size', attributes: ['id', 'name'] },
+            { model: Color, as: 'color', attributes: ['id', 'name', 'hex_code'] }
+          ]
+        }
+      ],
+      attributes: []
+    });
+
+    // Extraer tallas y colores únicos
+    const availableSizes = [];
+    const availableColors = [];
+    const seenSizes = new Set();
+    const seenColors = new Set();
+
+    console.log('Available filters data:', availableFilters.length, 'products found');
+    
+    availableFilters.forEach(product => {
+      console.log('Product variants:', product.variants.length);
+      product.variants.forEach(variant => {
+        console.log('Variant size:', variant.size, 'color:', variant.color);
+        if (!seenSizes.has(variant.size.id)) {
+          availableSizes.push(variant.size);
+          seenSizes.add(variant.size.id);
+        }
+        if (!seenColors.has(variant.color.id)) {
+          availableColors.push(variant.color);
+          seenColors.add(variant.color.id);
+        }
+      });
+    });
+
+    console.log('Final filters - Sizes:', availableSizes.length, 'Colors:', availableColors.length);
+
+    const totalPages = Math.ceil(count / limit);
+
     res.json({
       success: true,
-      data: { category }
+      data: { 
+        category: {
+          ...category.toJSON(),
+          products
+        },
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages,
+          totalItems: count,
+          itemsPerPage: parseInt(limit)
+        },
+        filters: {
+          availableSizes,
+          availableColors
+        }
+      }
     });
   } catch (error) {
     console.error('Error obteniendo categoría:', error);

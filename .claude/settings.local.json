@@ -18,7 +18,8 @@
       "Bash(mv:*)",
       "Bash(true)",
       "Bash(npm start)",
-      "Bash(timeout 8s npm start)"
+      "Bash(timeout 8s npm start)",
+      "Bash(cd:*)"
     ],
     "deny": []
   }
