@@ -18,7 +18,7 @@
   height: calc(100vh);
   overflow-y: auto;
   z-index: 9999999; /* Por encima de opacity (z-index: 11) pero debajo del header */
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  box-shadow: 2px 0 15px rgba(0, 0, 0, 0.2); /* Sombra más prominente para overlay */
   overflow-y:scroll;
   transition: all .5s ease ;
 }
@@ -77,15 +77,10 @@
   margin-left: 0; /* Sin margen por defecto */
   flex: 1;
   padding: 2rem;
-  transition: margin-left .5s ease; /* Transición suave */
-  width: 100%; /* Ocupa 100% del ancho disponible */
+  width: 100%; /* Siempre ocupa 100% del ancho disponible */
 }
 
-/* Cuando el sidebar está visible, el contenido se desplaza */
-.adminPanel.sidebar-open .adminContent {
-  margin-left: 280px;
-  width: calc(100% - 280px);
-}
+/* El contenido ya no se desplaza - el sidebar se superpone */
 
 .adminContentHeader {
   display: flex;
@@ -887,31 +882,26 @@
   
   .adminProducts .adminTable th:nth-child(3),
   .adminProducts .adminTable td:nth-child(3) {
-    min-width: 100px;
+    min-width: 120px;
   }
   
   .adminProducts .adminTable th:nth-child(4),
   .adminProducts .adminTable td:nth-child(4) {
-    min-width: 120px;
+    min-width: 100px;
   }
   
   .adminProducts .adminTable th:nth-child(5),
   .adminProducts .adminTable td:nth-child(5) {
-    min-width: 100px;
+    min-width: 80px;
   }
   
   .adminProducts .adminTable th:nth-child(6),
   .adminProducts .adminTable td:nth-child(6) {
-    min-width: 80px;
+    min-width: 90px;
   }
   
   .adminProducts .adminTable th:nth-child(7),
   .adminProducts .adminTable td:nth-child(7) {
-    min-width: 90px;
-  }
-  
-  .adminProducts .adminTable th:nth-child(8),
-  .adminProducts .adminTable td:nth-child(8) {
     min-width: 100px;
   }
 }
@@ -1061,10 +1051,4 @@
   }
 }
 
-/* Sobrescribir para móviles - el contenido siempre ocupa 100% */
-@media screen and (max-width: 768px) {
-  .adminPanel.sidebar-open .adminContent {
-    margin-left: 0 !important;
-    width: 100% !important;
-  }
-}
+/* El sidebar siempre se superpone como overlay en todas las resoluciones */

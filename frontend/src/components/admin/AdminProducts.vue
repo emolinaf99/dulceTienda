@@ -323,7 +323,6 @@ onMounted(() => {
             <tr>
               <th>Imagen</th>
               <th>Nombre</th>
-              <th>SKU</th>
               <th>Categoría</th>
               <th>Precio</th>
               <th>Stock</th>
@@ -350,7 +349,6 @@ onMounted(() => {
                   </span>
                 </div>
               </td>
-              <td>{{ product.sku }}</td>
               <td>{{ product.category?.name || 'Sin categoría' }}</td>
               <td>
                 <div>{{ formatPrice(product.price) }}</div>
