@@ -19,7 +19,8 @@
       "Bash(true)",
       "Bash(npm start)",
       "Bash(timeout 8s npm start)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }

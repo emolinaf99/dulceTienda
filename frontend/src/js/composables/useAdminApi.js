@@ -296,7 +296,7 @@ export function useAdminApi() {
     loading.value = true;
     clearError();
     try {
-      const { data, error: apiError } = await useApi(`/api/categories/${categoryId}`, 'DELETE');
+      const { data, error: apiError } = await useApi(`/api/admin/categories/${categoryId}`, 'DELETE');
       if (apiError.value) {
         error.value = 'Error al eliminar categoría';
         return null;
@@ -364,6 +364,42 @@ export function useAdminApi() {
     }
   };
 
+  const updateColor = async (colorId, colorData) => {
+    loading.value = true;
+    clearError();
+    try {
+      const { data, error: apiError } = await useApi(`/api/colors/${colorId}`, 'PUT', colorData);
+      if (apiError.value) {
+        error.value = 'Error al actualizar color';
+        return null;
+      }
+      return data.value;
+    } catch (err) {
+      error.value = 'Error de conexión';
+      return null;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const deleteColor = async (colorId) => {
+    loading.value = true;
+    clearError();
+    try {
+      const { data, error: apiError } = await useApi(`/api/colors/${colorId}`, 'DELETE');
+      if (apiError.value) {
+        error.value = 'Error al eliminar color';
+        return null;
+      }
+      return data.value;
+    } catch (err) {
+      error.value = 'Error de conexión';
+      return null;
+    } finally {
+      loading.value = false;
+    }
+  };
+
   return {
     loading,
     error,
@@ -391,6 +427,8 @@ export function useAdminApi() {
     getAdminColors,
     createSize,
     createTypeSize,
-    createColor
+    createColor,
+    updateColor,
+    deleteColor
   };
 }

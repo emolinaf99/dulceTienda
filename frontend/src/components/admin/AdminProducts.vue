@@ -24,7 +24,7 @@ const pagination = ref({});
 const searchTerm = ref('');
 const selectedCategory = ref('all');
 const selectedStatus = ref('all');
-const sortBy = ref('created_at');
+const sortBy = ref('id');
 const sortOrder = ref('DESC');
 const currentPage = ref(1);
 const showModal = ref(false);
@@ -101,7 +101,7 @@ const resetFilters = () => {
   searchTerm.value = '';
   selectedCategory.value = 'all';
   selectedStatus.value = 'all';
-  sortBy.value = 'created_at';
+  sortBy.value = 'id';
   sortOrder.value = 'DESC';
   currentPage.value = 1;
   loadProducts();

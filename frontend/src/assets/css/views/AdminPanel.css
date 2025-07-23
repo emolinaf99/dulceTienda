@@ -963,11 +963,6 @@
   min-width: 100px;
 }
 
-.adminUsers .adminTable th:nth-child(7),
-.adminUsers .adminTable td:nth-child(7) {
-  min-width: 110px;
-}
-
 /* Dashboard responsive improvements */
 @media screen and (max-width: 768px) {
   .adminDashboard .adminStatsGrid {

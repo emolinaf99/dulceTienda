@@ -9,6 +9,8 @@ const {
   createSize,
   createTypeSize,
   createColor,
+  updateColor,
+  deleteColor,
   loading,
   error
 } = useAdminApi();
@@ -20,6 +22,9 @@ const colors = ref([]);
 const showSizeModal = ref(false);
 const showTypeSizeModal = ref(false);
 const showColorModal = ref(false);
+const showDeleteConfirm = ref(false);
+const colorToDelete = ref(null);
+const colorModalMode = ref('create'); // create, edit
 
 // Form data
 const sizeForm = ref({
@@ -47,14 +52,16 @@ const loadSizes = async () => {
 const loadTypeSizes = async () => {
   const result = await getAdminTypeSizes();
   if (result) {
-    typeSizes.value = result.data;
+    // Ordenar tipos de talla por ID descendente (más reciente primero)
+    typeSizes.value = result.data.sort((a, b) => b.id - a.id);
   }
 };
 
 const loadColors = async () => {
   const result = await getAdminColors();
   if (result) {
-    colors.value = result.data;
+    // Ordenar colores alfabéticamente por nombre
+    colors.value = result.data.sort((a, b) => a.name.localeCompare(b.name));
   }
 };
 
@@ -108,8 +115,17 @@ const handleTypeSizeSubmit = async () => {
   }
 };
 
-const openColorModal = () => {
+const openColorModal = (mode = 'create', color = null) => {
+  colorModalMode.value = mode;
   resetColorForm();
+  
+  if (mode === 'edit' && color) {
+    colorForm.value = {
+      name: color.name,
+      hex_code: color.hex_code
+    };
+  }
+  
   showColorModal.value = true;
 };
 
@@ -126,11 +142,47 @@ const resetColorForm = () => {
 };
 
 const handleColorSubmit = async () => {
-  const result = await createColor(colorForm.value);
+  let result;
+  
+  if (colorModalMode.value === 'create') {
+    result = await createColor(colorForm.value);
+  } else if (colorModalMode.value === 'edit') {
+    result = await updateColor(selectedColor.value.id, colorForm.value);
+  }
+  
   if (result) {
     closeColorModal();
     loadColors();
   }
+};
+
+// Agregar selectedColor para edición
+const selectedColor = ref(null);
+
+const confirmDeleteColor = (color) => {
+  colorToDelete.value = color;
+  showDeleteConfirm.value = true;
+};
+
+const handleDeleteColor = async () => {
+  if (colorToDelete.value) {
+    const result = await deleteColor(colorToDelete.value.id);
+    if (result) {
+      showDeleteConfirm.value = false;
+      colorToDelete.value = null;
+      loadColors();
+    }
+  }
+};
+
+const cancelDelete = () => {
+  showDeleteConfirm.value = false;
+  colorToDelete.value = null;
+};
+
+const editColor = (color) => {
+  selectedColor.value = color;
+  openColorModal('edit', color);
 };
 
 // Lifecycle
@@ -312,6 +364,24 @@ onMounted(() => {
           <div style="font-size: 0.8rem; color: #999; margin-top: 0.5rem;">
             ID: {{ color.id }}
           </div>
+          
+          <!-- Botones de acción -->
+          <div style="margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: center;">
+            <button 
+              @click="editColor(color)"
+              class="adminBtn adminBtnWarning adminBtnSmall"
+              title="Editar color"
+            >
+              <i class="fas fa-edit"></i>
+            </button>
+            <button 
+              @click="confirmDeleteColor(color)"
+              class="adminBtn adminBtnDanger adminBtnSmall"
+              title="Eliminar color"
+            >
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -480,8 +550,8 @@ onMounted(() => {
       <div class="adminModalContent">
         <div class="adminModalHeader">
           <h3>
-            <i class="fas fa-plus"></i>
-            Nuevo Color
+            <i :class="colorModalMode === 'edit' ? 'fas fa-edit' : 'fas fa-plus'"></i>
+            {{ colorModalMode === 'edit' ? 'Editar Color' : 'Nuevo Color' }}
           </h3>
           <button @click="closeColorModal" class="adminCloseBtn">
             <i class="fas fa-times"></i>
@@ -533,11 +603,65 @@ onMounted(() => {
               Cancelar
             </button>
             <button type="submit" class="adminBtn adminBtnPrimary" :disabled="loading">
-              <i class="fas fa-plus"></i>
-              {{ loading ? 'Creando...' : 'Crear Color' }}
+              <i :class="colorModalMode === 'edit' ? 'fas fa-save' : 'fas fa-plus'"></i>
+              {{ loading ? (colorModalMode === 'edit' ? 'Actualizando...' : 'Creando...') : (colorModalMode === 'edit' ? 'Actualizar Color' : 'Crear Color') }}
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div v-if="showDeleteConfirm" class="adminModal" @click.self="cancelDelete">
+      <div class="adminModalContent" style="max-width: 400px;">
+        <div class="adminModalHeader">
+          <h3 style="color: #dc3545;">
+            <i class="fas fa-exclamation-triangle"></i>
+            Confirmar Eliminación
+          </h3>
+          <button @click="cancelDelete" class="adminCloseBtn">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <div class="adminModalBody">
+          <p style="margin: 0 0 1rem; color: #666;">
+            ¿Estás seguro de que deseas eliminar el color 
+            <strong>{{ colorToDelete?.name }}</strong>?
+          </p>
+          <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 6px; margin-bottom: 1rem;">
+            <div
+              :style="{
+                width: '40px',
+                height: '40px',
+                backgroundColor: colorToDelete?.hex_code,
+                borderRadius: '50%',
+                border: '2px solid #ddd'
+              }"
+            ></div>
+            <div>
+              <div style="font-weight: bold;">{{ colorToDelete?.name }}</div>
+              <div style="font-size: 0.9rem; color: #666; font-family: monospace;">
+                {{ colorToDelete?.hex_code }}
+              </div>
+            </div>
+          </div>
+          <p style="margin: 0; color: #dc3545; font-size: 0.9rem;">
+            <i class="fas fa-exclamation-triangle"></i>
+            Esta acción no se puede deshacer.
+          </p>
+        </div>
+
+        <div class="adminModalActions">
+          <button type="button" @click="cancelDelete" class="adminBtn adminBtnSecondary">
+            <i class="fas fa-times"></i>
+            Cancelar
+          </button>
+          <button type="button" @click="handleDeleteColor" class="adminBtn adminBtnDanger" :disabled="loading">
+            <i class="fas fa-trash"></i>
+            {{ loading ? 'Eliminando...' : 'Eliminar Color' }}
+          </button>
+        </div>
       </div>
     </div>
 

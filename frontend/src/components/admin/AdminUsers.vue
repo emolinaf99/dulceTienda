@@ -26,7 +26,9 @@ const loadUsers = async () => {
     limit: 10,
     search: searchTerm.value,
     role: selectedRole.value,
-    status: selectedStatus.value
+    status: selectedStatus.value,
+    sortBy: 'id',
+    sortOrder: 'DESC'
   };
 
   const result = await getAdminUsers(params);
@@ -167,7 +169,6 @@ onMounted(() => {
               <th>Rol</th>
               <th>Estado</th>
               <th>Registro</th>
-              <th>Último acceso</th>
               <th>Acciones</th>
             </tr>
           </thead>
@@ -200,7 +201,6 @@ onMounted(() => {
                 </span>
               </td>
               <td>{{ formatDate(user.created_at) }}</td>
-              <td>{{ user.last_login ? formatDate(user.last_login) : 'Nunca' }}</td>
               <td>
                 <div class="adminTableActions">
                   <button

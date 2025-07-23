@@ -10,6 +10,7 @@ import {
   toggleProductStatus,
   toggleCategoryStatus,
   toggleUserStatus,
+  deleteCategory,
   createTypeSize
 } from '../controllers/adminController.js';
 import { adminOnly } from '../middleware/adminAuth.js';
@@ -29,6 +30,7 @@ router.patch('/products/:id/toggle-status', toggleProductStatus);
 // Categories management
 router.get('/categories', getAdminCategories);
 router.patch('/categories/:id/toggle-status', toggleCategoryStatus);
+router.delete('/categories/:id', deleteCategory);
 
 // Users management
 router.get('/users', getAdminUsers);

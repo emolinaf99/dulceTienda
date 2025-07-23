@@ -6,7 +6,8 @@ import { Op } from 'sequelize';
 export const getDashboardStats = async (req, res) => {
   try {
     const totalProducts = await Product.count({ where: { is_active: true } });
-    const totalCategories = await Category.count({ where: { is_active: true } });
+    const totalCategories = await Category.count(); // Debug: contar todas las categorías
+    console.log('Debug Dashboard - Total categories in DB:', totalCategories);
     const totalUsers = await User.count({ where: { is_active: true, role: ['cliente', 'mayorista'] } });
     
     // Recent products (last 7 days)
@@ -26,13 +27,14 @@ export const getDashboardStats = async (req, res) => {
       }
     });
 
-    // Out of stock products
-    const outOfStock = await Product.count({
-      where: {
-        stock: { [Op.lte]: 0 },
-        is_active: true
-      }
-    });
+    // Out of stock products - Comentado porque el modelo Product no tiene campo stock
+    // const outOfStock = await Product.count({
+    //   where: {
+    //     stock: { [Op.lte]: 0 },
+    //     is_active: true
+    //   }
+    // });
+    const outOfStock = 0; // Valor por defecto hasta que se implemente el campo stock
 
     res.json({
       success: true,
@@ -144,7 +146,10 @@ export const getAdminCategories = async (req, res) => {
       where.is_active = false;
     }
 
-    const { count, rows: categories } = await Category.findAndCountAll({
+    // Separar el conteo de las categorías para evitar problemas con JOIN
+    const count = await Category.count({ where });
+    
+    const categories = await Category.findAll({
       where,
       attributes: ['id', 'name', 'description', 'is_active', 'created_at', 'updated_at'],
       order: [[sortBy, sortOrder]],
@@ -157,6 +162,16 @@ export const getAdminCategories = async (req, res) => {
         where: { is_active: true },
         required: false
       }]
+    });
+
+    // Debug log para verificar el conteo
+    console.log('Debug Categories FIXED:', {
+      count,
+      categoriesLength: categories.length,
+      where,
+      page,
+      limit,
+      offset
     });
 
     // Add product count to each category
@@ -408,6 +423,61 @@ export const toggleUserStatus = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error al cambiar el estado del usuario'
+    });
+  }
+};
+
+// Delete or deactivate category based on associated products
+export const deleteCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const category = await Category.findByPk(id);
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: 'Categoría no encontrada'
+      });
+    }
+
+    // Verificar si la categoría tiene productos asociados
+    const productCount = await Product.count({
+      where: { category_id: id }
+    });
+
+    if (productCount > 0) {
+      // Si tiene productos asociados, solo desactivar
+      if (!category.is_active) {
+        return res.status(400).json({
+          success: false,
+          message: 'La categoría ya está desactivada'
+        });
+      }
+
+      category.is_active = false;
+      await category.save();
+
+      res.json({
+        success: true,
+        message: `Categoría desactivada correctamente. No se puede eliminar porque tiene ${productCount} producto(s) asociado(s).`,
+        data: category,
+        action: 'deactivated'
+      });
+    } else {
+      // Si no tiene productos asociados, eliminar completamente
+      await category.destroy();
+
+      res.json({
+        success: true,
+        message: 'Categoría eliminada completamente.',
+        action: 'deleted'
+      });
+    }
+  } catch (error) {
+    console.error('Error deleting/deactivating category:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al procesar la eliminación de la categoría'
     });
   }
 };

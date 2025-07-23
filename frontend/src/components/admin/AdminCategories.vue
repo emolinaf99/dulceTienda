@@ -37,7 +37,9 @@ const loadCategories = async () => {
     page: currentPage.value,
     limit: 10,
     search: searchTerm.value,
-    status: selectedStatus.value
+    status: selectedStatus.value,
+    sortBy: 'id',
+    sortOrder: 'DESC'
   };
 
   const result = await getAdminCategories(params);
@@ -130,6 +132,16 @@ const handleDelete = async () => {
     const result = await deleteCategory(categoryToDelete.value.id);
     if (result) {
       showDeleteConfirm.value = false;
+      
+      // Mostrar mensaje específico según la acción realizada
+      if (result.action === 'deleted') {
+        // Mostrar notificación de eliminación completa
+        console.log('✅ Categoría eliminada completamente:', result.message);
+      } else if (result.action === 'deactivated') {
+        // Mostrar notificación de desactivación
+        console.log('⚠️ Categoría desactivada:', result.message);
+      }
+      
       categoryToDelete.value = null;
       loadCategories();
     }
@@ -369,13 +381,28 @@ onMounted(() => {
         </div>
 
         <div style="padding: 1rem 0;">
-          <p>¿Estás seguro de que deseas eliminar la categoría <strong>{{ categoryToDelete?.name }}</strong>?</p>
-          <p style="color: #dc3545; font-size: 0.9rem; margin-top: 1rem;">
-            Esta acción no se puede deshacer.
-          </p>
-          <div v-if="categoryToDelete?.productCount > 0" style="background: #fff3cd; color: #856404; padding: 0.75rem; border-radius: 4px; margin-top: 1rem;">
-            <i class="fas fa-exclamation-triangle"></i>
-            Esta categoría tiene {{ categoryToDelete.productCount }} productos asociados. Debes reasignar o eliminar estos productos primero.
+          <p>¿Qué deseas hacer con la categoría <strong>{{ categoryToDelete?.name }}</strong>?</p>
+          
+          <div v-if="categoryToDelete?.productCount > 0" style="background: #fff3cd; color: #856404; padding: 1rem; border-radius: 4px; margin: 1rem 0;">
+            <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+              <i class="fas fa-info-circle" style="margin-right: 0.5rem;"></i>
+              <strong>Categoría con productos asociados</strong>
+            </div>
+            <p style="margin: 0; font-size: 0.9rem;">
+              Esta categoría tiene <strong>{{ categoryToDelete.productCount }} producto(s)</strong> asociado(s).
+              Al confirmar, la categoría será <strong>desactivada</strong> para preservar la integridad de los datos.
+            </p>
+          </div>
+          
+          <div v-else style="background: #f8d7da; color: #721c24; padding: 1rem; border-radius: 4px; margin: 1rem 0;">
+            <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+              <i class="fas fa-exclamation-triangle" style="margin-right: 0.5rem;"></i>
+              <strong>Eliminar categoría permanentemente</strong>
+            </div>
+            <p style="margin: 0; font-size: 0.9rem;">
+              Esta categoría no tiene productos asociados y será <strong>eliminada completamente</strong>.
+              Esta acción no se puede deshacer.
+            </p>
           </div>
         </div>
 
@@ -387,10 +414,13 @@ onMounted(() => {
           <button 
             @click="handleDelete" 
             class="adminBtn adminBtnDanger" 
-            :disabled="loading || categoryToDelete?.productCount > 0"
+            :disabled="loading"
           >
-            <i class="fas fa-trash"></i>
-            {{ loading ? 'Eliminando...' : 'Eliminar Categoría' }}
+            <i :class="categoryToDelete?.productCount > 0 ? 'fas fa-eye-slash' : 'fas fa-trash'"></i>
+            {{ loading 
+              ? (categoryToDelete?.productCount > 0 ? 'Desactivando...' : 'Eliminando...') 
+              : (categoryToDelete?.productCount > 0 ? 'Desactivar Categoría' : 'Eliminar Categoría') 
+            }}
           </button>
         </div>
       </div>
