@@ -4,6 +4,7 @@ import { useAdminApi } from '@/js/composables/useAdminApi.js';
 
 const {
   getAdminCategories,
+  getAdminTypeSizes,
   toggleCategoryStatus,
   createCategory,
   updateCategory,
@@ -14,6 +15,7 @@ const {
 
 // State
 const categories = ref([]);
+const typeSizes = ref([]);
 const pagination = ref({});
 const searchTerm = ref('');
 const selectedStatus = ref('all');
@@ -28,6 +30,7 @@ const categoryToDelete = ref(null);
 const categoryForm = ref({
   name: '',
   description: '',
+  type_size_id: '',
   is_active: true
 });
 
@@ -89,6 +92,7 @@ const resetForm = () => {
   categoryForm.value = {
     name: '',
     description: '',
+    type_size_id: '',
     is_active: true
   };
 };
@@ -97,6 +101,7 @@ const populateForm = (category) => {
   categoryForm.value = {
     name: category.name || '',
     description: category.description || '',
+    type_size_id: category.type_size_id || '',
     is_active: category.is_active !== false
   };
 };
@@ -152,9 +157,17 @@ const formatDate = (date) => {
   return new Date(date).toLocaleDateString('es-ES');
 };
 
+const loadTypeSizes = async () => {
+  const result = await getAdminTypeSizes();
+  if (result) {
+    typeSizes.value = result.data;
+  }
+};
+
 // Lifecycle
 onMounted(() => {
   loadCategories();
+  loadTypeSizes();
 });
 </script>
 
@@ -212,6 +225,7 @@ onMounted(() => {
           <tr>
             <th>Nombre</th>
             <th>Descripción</th>
+            <th>Tipo de Tallaje</th>
             <th>Productos</th>
             <th>Estado</th>
             <th>Fecha de creación</th>
@@ -227,6 +241,14 @@ onMounted(() => {
               <div style="max-width: 300px; overflow: hidden; text-overflow: ellipsis;">
                 {{ category.description || 'Sin descripción' }}
               </div>
+            </td>
+            <td>
+              <span v-if="category.typeSize" style="background: #e3f2fd; color: #1976d2; padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.8rem;">
+                {{ category.typeSize.description }}
+              </span>
+              <span v-else style="color: #666; font-style: italic; font-size: 0.8rem;">
+                Sin tallaje
+              </span>
             </td>
             <td>
               <span style="background: #e9ecef; padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.8rem;">
@@ -344,6 +366,19 @@ onMounted(() => {
           <div class="adminFormGroup">
             <label>Descripción</label>
             <textarea v-model="categoryForm.description" rows="3" placeholder="Descripción opcional de la categoría"></textarea>
+          </div>
+
+          <div class="adminFormGroup">
+            <label>Tipo de Tallaje</label>
+            <select v-model="categoryForm.type_size_id">
+              <option value="">Sin tipo de tallaje específico</option>
+              <option v-for="typeSize in typeSizes" :key="typeSize.id" :value="typeSize.id">
+                {{ typeSize.description }}
+              </option>
+            </select>
+            <small style="color: #666; display: block; margin-top: 0.5rem;">
+              Selecciona el tipo de tallaje que se utilizará para los productos de esta categoría
+            </small>
           </div>
 
           <div style="margin: 1.5rem 0;">

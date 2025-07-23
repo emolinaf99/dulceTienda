@@ -151,17 +151,25 @@ export const getAdminCategories = async (req, res) => {
     
     const categories = await Category.findAll({
       where,
-      attributes: ['id', 'name', 'description', 'is_active', 'created_at', 'updated_at'],
+      attributes: ['id', 'name', 'description', 'is_active', 'type_size_id', 'created_at', 'updated_at'],
       order: [[sortBy, sortOrder]],
       limit: parseInt(limit),
       offset,
-      include: [{
-        model: Product,
-        as: 'products',
-        attributes: ['id'],
-        where: { is_active: true },
-        required: false
-      }]
+      include: [
+        {
+          model: Product,
+          as: 'products',
+          attributes: ['id'],
+          where: { is_active: true },
+          required: false
+        },
+        {
+          model: TypeSize,
+          as: 'typeSize',
+          attributes: ['id', 'description'],
+          required: false
+        }
+      ]
     });
 
     // Debug log para verificar el conteo

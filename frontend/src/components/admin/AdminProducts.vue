@@ -33,20 +33,24 @@ const selectedProduct = ref(null);
 const showDeleteConfirm = ref(false);
 const productToDelete = ref(null);
 
+// Nuevos estados para colores y variantes
+const selectedColors = ref([]);
+const selectedSizes = ref([]);
+const colorImages = ref({}); // Objeto para almacenar imágenes por color
+const availableSizes = ref([]); // Tallas filtradas por categoría
+
 // Form data
 const productForm = ref({
   name: '',
   description: '',
   price: '',
   discount_percentage: 0,
-  stock: '',
   category_id: '',
   sku: '',
   is_featured: false,
   is_active: true,
-  sizes: [],
-  colors: [],
-  images: []
+  variants: [], // Array de {size_id, color_id, stock}
+  colorImages: [] // Array de {color_id, images}
 });
 
 // Computed
@@ -139,15 +143,17 @@ const resetForm = () => {
     description: '',
     price: '',
     discount_percentage: 0,
-    stock: '',
     category_id: '',
     sku: '',
     is_featured: false,
     is_active: true,
-    sizes: [],
-    colors: [],
-    images: []
+    variants: [],
+    colorImages: []
   };
+  selectedColors.value = [];
+  selectedSizes.value = [];
+  colorImages.value = {};
+  availableSizes.value = [];
 };
 
 const populateForm = (product) => {
@@ -156,35 +162,70 @@ const populateForm = (product) => {
     description: product.description || '',
     price: product.price || '',
     discount_percentage: product.discount_percentage || 0,
-    stock: product.stock || '',
     category_id: product.category_id || '',
     sku: product.sku || '',
     is_featured: product.is_featured || false,
     is_active: product.is_active !== false,
-    sizes: product.sizes || [],
-    colors: product.colors || [],
-    images: []
+    variants: product.variants || [],
+    colorImages: product.colorImages || []
   };
+  // Extraer colores y tallas de las variantes existentes
+  if (product.variants) {
+    selectedColors.value = [...new Set(product.variants.map(v => v.color_id))];
+    selectedSizes.value = [...new Set(product.variants.map(v => v.size_id))];
+  }
+  // Filtrar tallas por categoria al editar
+  if (product.category_id) {
+    filterSizesByCategory();
+  }
 };
 
 const handleSubmit = async () => {
   try {
     const formData = new FormData();
     
+    // Preparar variantes con stock
+    const variants = [];
+    selectedSizes.value.forEach(sizeId => {
+      selectedColors.value.forEach(colorId => {
+        const stockValue = document.querySelector(`#stock_${sizeId}_${colorId}`)?.value || 0;
+        variants.push({
+          size_id: sizeId,
+          color_id: colorId,
+          stock: parseInt(stockValue)
+        });
+      });
+    });
+    
+    // Preparar imágenes por color
+    const colorImagesData = [];
+    selectedColors.value.forEach(colorId => {
+      if (colorImages.value[colorId] && colorImages.value[colorId].length > 0) {
+        colorImagesData.push({
+          color_id: colorId,
+          images: colorImages.value[colorId]
+        });
+      }
+    });
+    
     // Add basic fields
     Object.keys(productForm.value).forEach(key => {
-      if (key !== 'images' && key !== 'sizes' && key !== 'colors') {
+      if (key !== 'variants' && key !== 'colorImages') {
         formData.append(key, productForm.value[key]);
       }
     });
     
-    // Add arrays as JSON
-    formData.append('sizes', JSON.stringify(productForm.value.sizes));
-    formData.append('colors', JSON.stringify(productForm.value.colors));
+    // Add variants and colorImages as JSON
+    formData.append('variants', JSON.stringify(variants));
+    formData.append('colorImages', JSON.stringify(colorImagesData));
     
     // Add images
-    productForm.value.images.forEach((file, index) => {
-      formData.append(`images`, file);
+    selectedColors.value.forEach(colorId => {
+      if (colorImages.value[colorId]) {
+        colorImages.value[colorId].forEach((file, index) => {
+          formData.append(`images`, file);
+        });
+      }
     });
 
     let result;
@@ -226,9 +267,65 @@ const handleDelete = async () => {
   }
 };
 
-const handleFileChange = (event) => {
-  productForm.value.images = Array.from(event.target.files);
+// Filtrar tallas por categoría
+const filterSizesByCategory = () => {
+  if (productForm.value.category_id) {
+    const category = categories.value.find(c => c.id == productForm.value.category_id);
+    if (category && category.type_size_id) {
+      availableSizes.value = sizes.value.filter(size => size.type_size_id === category.type_size_id);
+    } else {
+      availableSizes.value = sizes.value;
+    }
+  } else {
+    availableSizes.value = [];
+  }
 };
+
+// Manejar cambio de categoria
+const handleCategoryChange = () => {
+  filterSizesByCategory();
+  selectedSizes.value = [];
+};
+
+// Manejar upload de imágenes por color
+const handleColorImageChange = (colorId, event) => {
+  const files = Array.from(event.target.files);
+  colorImages.value[colorId] = files;
+};
+
+// Agregar o quitar color
+const toggleColor = (colorId) => {
+  const index = selectedColors.value.indexOf(colorId);
+  if (index > -1) {
+    selectedColors.value.splice(index, 1);
+    delete colorImages.value[colorId];
+  } else {
+    selectedColors.value.push(colorId);
+  }
+};
+
+// Agregar o quitar talla
+const toggleSize = (sizeId) => {
+  const index = selectedSizes.value.indexOf(sizeId);
+  if (index > -1) {
+    selectedSizes.value.splice(index, 1);
+  } else {
+    selectedSizes.value.push(sizeId);
+  }
+};
+
+// Obtener nombre del color
+const getColorName = (colorId) => {
+  const color = colors.value.find(c => c.id === colorId);
+  return color ? color.name : 'Color';
+};
+
+// Obtener nombre de la talla
+const getSizeName = (sizeId) => {
+  const size = availableSizes.value.find(s => s.id === sizeId);
+  return size ? size.name : 'Talla';
+};
+
 
 const formatPrice = (price) => {
   return new Intl.NumberFormat('es-CO', {
@@ -498,21 +595,14 @@ onMounted(() => {
             </div>
           </div>
 
-          <div class="adminFormRow">
-            <div class="adminFormGroup">
-              <label>Stock *</label>
-              <input v-model="productForm.stock" type="number" min="0" required />
-            </div>
-
-            <div class="adminFormGroup">
-              <label>SKU</label>
-              <input v-model="productForm.sku" type="text" />
-            </div>
+          <div class="adminFormGroup">
+            <label>SKU</label>
+            <input v-model="productForm.sku" type="text" />
           </div>
 
           <div class="adminFormGroup">
             <label>Categoría *</label>
-            <select v-model="productForm.category_id" required>
+            <select v-model="productForm.category_id" @change="handleCategoryChange" required>
               <option value="">Selecciona una categoría</option>
               <option v-for="category in categories" :key="category.id" :value="category.id">
                 {{ category.name }}
@@ -520,12 +610,134 @@ onMounted(() => {
             </select>
           </div>
 
-          <div class="adminFormGroup">
-            <label>Imágenes del Producto</label>
-            <input @change="handleFileChange" type="file" multiple accept="image/*" />
+          <!-- Colores Disponibles -->
+          <div class="adminFormGroup" v-if="colors.length > 0">
+            <label>Colores Disponibles *</label>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
+              <label 
+                v-for="color in colors" 
+                :key="color.id" 
+                style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9;"
+                :style="{ 
+                  background: selectedColors.includes(color.id) ? '#e3f2fd' : '#f9f9f9',
+                  borderColor: selectedColors.includes(color.id) ? '#2196f3' : '#ddd'
+                }"
+              >
+                <input 
+                  type="checkbox" 
+                  :checked="selectedColors.includes(color.id)"
+                  @change="toggleColor(color.id)"
+                />
+                <div 
+                  style="width: 20px; height: 20px; border-radius: 50%; border: 1px solid #ccc;"
+                  :style="{ backgroundColor: color.hex_code || '#ccc' }"
+                ></div>
+                {{ color.name }}
+              </label>
+            </div>
             <small style="color: #666; display: block; margin-top: 0.5rem;">
-              Selecciona hasta 4 imágenes (JPG, PNG, WebP - máx. 5MB cada una)
+              Selecciona los colores disponibles para este producto
             </small>
+          </div>
+
+          <!-- Tallas Disponibles -->
+          <div class="adminFormGroup" v-if="availableSizes.length > 0">
+            <label>Tallas Disponibles *</label>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
+              <label 
+                v-for="size in availableSizes" 
+                :key="size.id" 
+                style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9;"
+                :style="{ 
+                  background: selectedSizes.includes(size.id) ? '#e8f5e8' : '#f9f9f9',
+                  borderColor: selectedSizes.includes(size.id) ? '#4caf50' : '#ddd'
+                }"
+              >
+                <input 
+                  type="checkbox" 
+                  :checked="selectedSizes.includes(size.id)"
+                  @change="toggleSize(size.id)"
+                />
+                {{ size.name }}
+              </label>
+            </div>
+            <small style="color: #666; display: block; margin-top: 0.5rem;">
+              Las tallas se filtran según el tipo de talla de la categoría seleccionada
+            </small>
+          </div>
+
+          <!-- Stock por Variante -->
+          <div class="adminFormGroup" v-if="selectedSizes.length > 0 && selectedColors.length > 0">
+            <label>Stock por Variante (Talla x Color)</label>
+            <div style="overflow-x: auto; margin-top: 0.5rem;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                <thead>
+                  <tr style="background: #f5f5f5;">
+                    <th style="border: 1px solid #ddd; padding: 0.5rem; text-align: left;">Talla / Color</th>
+                    <th 
+                      v-for="colorId in selectedColors" 
+                      :key="colorId" 
+                      style="border: 1px solid #ddd; padding: 0.5rem; text-align: center; min-width: 80px;"
+                    >
+                      {{ getColorName(colorId) }}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="sizeId in selectedSizes" :key="sizeId">
+                    <td style="border: 1px solid #ddd; padding: 0.5rem; font-weight: 500;">
+                      {{ getSizeName(sizeId) }}
+                    </td>
+                    <td 
+                      v-for="colorId in selectedColors" 
+                      :key="`${sizeId}-${colorId}`" 
+                      style="border: 1px solid #ddd; padding: 0.25rem; text-align: center;"
+                    >
+                      <input 
+                        :id="`stock_${sizeId}_${colorId}`"
+                        type="number" 
+                        min="0" 
+                        placeholder="0"
+                        style="width: 60px; padding: 0.25rem; border: 1px solid #ccc; border-radius: 3px; text-align: center;"
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <small style="color: #666; display: block; margin-top: 0.5rem;">
+              Ingresa el stock disponible para cada combinación de talla y color
+            </small>
+          </div>
+
+          <!-- Imágenes por Color -->
+          <div class="adminFormGroup" v-if="selectedColors.length > 0">
+            <label>Imágenes por Color</label>
+            <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 0.5rem;">
+              <div 
+                v-for="colorId in selectedColors" 
+                :key="colorId" 
+                style="border: 1px solid #ddd; border-radius: 4px; padding: 1rem; background: #f9f9f9;"
+              >
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                  <div 
+                    style="width: 20px; height: 20px; border-radius: 50%; border: 1px solid #ccc;"
+                    :style="{ backgroundColor: colors.find(c => c.id === colorId)?.hex_code || '#ccc' }"
+                  ></div>
+                  <strong>{{ getColorName(colorId) }}</strong>
+                </div>
+                <input 
+                  @change="handleColorImageChange(colorId, $event)" 
+                  type="file" 
+                  multiple 
+                  accept="image/*"
+                  style="width: 100%;"
+                />
+                <small style="color: #666; display: block; margin-top: 0.25rem;">
+                  Selecciona las imágenes para el color {{ getColorName(colorId) }} (JPG, PNG, WebP - máx. 5MB cada una)
+                </small>
+              </div>
+            </div>
           </div>
 
           <div style="display: flex; gap: 1rem; margin: 1.5rem 0;">
