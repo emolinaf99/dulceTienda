@@ -244,12 +244,8 @@ const populateForm = (product) => {
   
   // Cargar imágenes existentes por color
   if (product.colorImages && product.colorImages.length > 0) {
-    console.log('🖼️ Loading existing images:', product.colorImages);
-    
     colorImages.value = {};
     product.colorImages.forEach(img => {
-      console.log('🖼️ Processing image:', img);
-      
       if (!colorImages.value[img.color_id]) {
         colorImages.value[img.color_id] = [];
       }
@@ -258,8 +254,6 @@ const populateForm = (product) => {
         isExisting: true
       });
     });
-    
-    console.log('🖼️ Final colorImages structure:', colorImages.value);
   }
 };
 
@@ -341,10 +335,11 @@ const handleSubmit = async () => {
     // Add images with color info in fieldname
     selectedColors.value.forEach(colorId => {
       if (colorImages.value[colorId]) {
-        colorImages.value[colorId].forEach((file, index) => {
+        colorImages.value[colorId].forEach((imgObj, index) => {
           // Solo agregar archivos nuevos (no imágenes existentes)
-          if (file instanceof File) {
-            formData.append(`color_${colorId}_images`, file);
+          if (!imgObj.isExisting && imgObj.file) {
+            console.log(`📎 Adding new file for color ${colorId}:`, imgObj.file.name);
+            formData.append(`color_${colorId}_images`, imgObj.file);
           }
         });
       }
@@ -463,13 +458,7 @@ const handleCategoryChange = () => {
   colorSizeConfig.value = {};
 };
 
-// Manejar upload de imágenes por color
-const handleColorImageChange = (colorId, event) => {
-  const numericColorId = parseInt(colorId);
-  const files = Array.from(event.target.files);
-  colorImages.value[numericColorId] = files;
-  console.log('Images selected for color:', numericColorId, 'Files:', files.length);
-};
+// (Función handleColorImageChange movida más abajo después de removeExistingImage)
 
 // Agregar o quitar color
 const toggleColor = (colorId) => {
@@ -540,6 +529,41 @@ const removeExistingImage = (colorId, imgIndex) => {
     
     mostrarNotificacion('Imagen marcada para eliminación. Guarda los cambios para confirmar.', 1);
   }
+};
+
+// Manejar selección de nuevas imágenes para un color
+const handleColorImageChange = (colorId, event) => {
+  const files = Array.from(event.target.files);
+  const numericColorId = parseInt(colorId);
+  
+  console.log(`🖼️ Adding ${files.length} new images for color ${numericColorId}`);
+  
+  if (files.length > 0) {
+    // Inicializar el array de imágenes para este color si no existe
+    if (!colorImages.value[numericColorId]) {
+      colorImages.value[numericColorId] = [];
+    }
+    
+    // Agregar cada archivo nuevo al array (se agregará a las existentes)
+    files.forEach(file => {
+      // Crear URL temporal para previsualización
+      const tempUrl = URL.createObjectURL(file);
+      
+      // Agregar el archivo con información para previsualización
+      colorImages.value[numericColorId].push({
+        file: file, // El archivo real para envío
+        url: tempUrl, // URL temporal para mostrar
+        isExisting: false, // Marca que es una imagen nueva
+        isNew: true
+      });
+    });
+    
+    console.log(`✅ Total images for color ${numericColorId}:`, colorImages.value[numericColorId].length);
+    mostrarNotificacion(`${files.length} imagen${files.length > 1 ? 'es' : ''} agregada${files.length > 1 ? 's' : ''} para ${getColorName(numericColorId)}`, 1);
+  }
+  
+  // Limpiar el input para permitir seleccionar los mismos archivos nuevamente si es necesario
+  event.target.value = '';
 };
 
 
@@ -927,21 +951,30 @@ onMounted(() => {
                 </div>
               </div>
 
-              <!-- Imágenes existentes para este color -->
+              <!-- Imágenes para este color (existentes y nuevas) -->
               <div v-if="colorImages[colorId] && colorImages[colorId].length > 0" class="adminFormGroup" style="margin-bottom: 1rem;">
-                <label>Imágenes actuales para {{ getColorName(colorId) }}</label>
+                <label>Imágenes para {{ getColorName(colorId) }}</label>
                 <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
                   <div 
                     v-for="(img, imgIndex) in colorImages[colorId]" 
-                    :key="`existing-${colorId}-${imgIndex}`"
-                    style="position: relative; width: 80px; height: 80px; border: 2px solid #ddd; border-radius: 8px; overflow: hidden;"
+                    :key="`image-${colorId}-${imgIndex}`"
+                    style="position: relative; width: 80px; height: 80px; border-radius: 8px; overflow: hidden;"
+                    :style="{ 
+                      border: img.isExisting ? '2px solid #28a745' : '2px solid #007bff',
+                    }"
                   >
                     <img 
-                      :src="`${apiBaseUrl}${img.url}`" 
+                      :src="img.isExisting ? `${apiBaseUrl}${img.url}` : img.url"
                       :alt="`Imagen ${imgIndex + 1}`"
                       style="width: 100%; height: 100%; object-fit: cover;"
                       @error="handleImageError"
                     />
+                    <!-- Badge para identificar tipo de imagen -->
+                    <div 
+                      style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; font-size: 8px; text-align: center; padding: 1px;"
+                    >
+                      {{ img.isExisting ? 'Actual' : 'Nueva' }}
+                    </div>
                     <button 
                       type="button"
                       @click="removeExistingImage(colorId, imgIndex)"
@@ -953,7 +986,8 @@ onMounted(() => {
                   </div>
                 </div>
                 <small style="color: #666; display: block; margin-top: 0.25rem;">
-                  Estas son las imágenes actuales. Puedes eliminarlas o agregar nuevas abajo.
+                  <span style="color: #28a745;">■</span> Imágenes actuales (guardadas)
+                  <span style="color: #007bff; margin-left: 1rem;">■</span> Imágenes nuevas (se guardarán al actualizar)
                 </small>
               </div>
 
