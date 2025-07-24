@@ -36,7 +36,7 @@ const __dirname = path.dirname(__filename);
 
 // Configuración de seguridad
 app.use(helmetConfig);
-app.use(cors({
+app.use('/api', cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true
 }));
@@ -45,8 +45,29 @@ app.use(cors({
 app.use('/api/', apiRateLimit);
 app.use(generalRateLimit);
 
-// Servir archivos estáticos
-app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+// Servir archivos estáticos con una configuración CORS más flexible
+app.use('/uploads', cors(), express.static(path.join(__dirname, 'public/uploads')));
+
+// // Servir archivos estáticos con CORS headers específicos
+// app.use('/uploads', (req, res, next) => {
+//   const allowedOrigins = [
+//     process.env.FRONTEND_URL || 'http://localhost:5173', // Tu frontend
+//     'http://localhost:3000' // Tu backend
+//   ];
+//   const origin = req.headers.origin; // Obtiene el origen de la solicitud entrante
+
+//   // Verifica si el origen de la solicitud está en la lista de permitidos
+//   if (allowedOrigins.includes(origin)) {
+//     // Si lo está, establece la cabecera Access-Control-Allow-Origin con ese origen
+//     res.header('Access-Control-Allow-Origin', origin);
+//   }
+//   // Si el origen no está en la lista, la cabecera no se establece,
+//   // y el navegador aplicará la política de mismo origen por defecto.
+
+//   res.header('Access-Control-Allow-Methods', 'GET');
+//   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+//   next();
+// }, express.static(path.join(__dirname, 'public/uploads')));
 
 // Middleware de parsing
 app.use(express.json({ limit: '10mb' }));

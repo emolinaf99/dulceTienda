@@ -11,17 +11,27 @@ export const initializeDatabase = async () => {
     await sequelize.sync({ force: false }); // force: true borra y recrea las tablas
     console.log('✅ Modelos sincronizados con la base de datos.');
 
-    // Crear datos iniciales
-    await createDefaultTypeSizes();
-    await createDefaultSizes();
-    await createDefaultColors();
-    await createDefaultCategories();
-    await createDefaultAdmin();
+    // Crear datos iniciales con timeout
+    const initPromise = Promise.all([
+      createDefaultTypeSizes(),
+      createDefaultSizes(),
+      createDefaultColors(),
+      createDefaultCategories(),
+      createDefaultAdmin()
+    ]);
+
+    await Promise.race([
+      initPromise,
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout en inicialización')), 10000)
+      )
+    ]);
 
     console.log('✅ Base de datos inicializada correctamente.');
   } catch (error) {
     console.error('❌ Error inicializando la base de datos:', error);
-    throw error;
+    // No relanzar el error para que el servidor pueda continuar
+    console.log('⚠️ Continuando sin inicialización completa...');
   }
 };
 

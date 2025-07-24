@@ -1,4 +1,4 @@
-import { Product, Category, User, Size, Color, Order, TypeSize } from '../models/associations.js';
+import { Product, Category, User, Size, Color, Order, TypeSize, ProductVariant, ImgColorProduct } from '../models/associations.js';
 import { validationResult } from 'express-validator';
 import { Op } from 'sequelize';
 
@@ -71,14 +71,68 @@ export const getAdminProducts = async (req, res) => {
 
     const offset = (page - 1) * limit;
     const where = {};
+    const includeArray = [{
+      model: Category,
+      as: 'category',
+      attributes: ['id', 'name']
+    }];
 
+    // Construir condiciones de búsqueda
     if (search) {
-      where[Op.or] = [
+      console.log('🔍 Searching for:', search);
+      
+      // Para búsqueda por nombre y descripción en la tabla principal
+      const mainSearchConditions = [
         { name: { [Op.like]: `%${search}%` } },
-        { description: { [Op.like]: `%${search}%` } },
-        { sku: { [Op.like]: `%${search}%` } }
+        { description: { [Op.like]: `%${search}%` } }
       ];
+
+      // Buscar productos que tengan variantes con SKU coincidente
+      const productsWithMatchingSku = await Product.findAll({
+        include: [{
+          model: ProductVariant,
+          as: 'variants',
+          where: {
+            sku: { [Op.like]: `%${search}%` }
+          },
+          attributes: ['id']
+        }],
+        attributes: ['id']
+      });
+
+      // Extraer IDs de productos que tienen variantes con SKU coincidente
+      const productIdsWithMatchingSku = productsWithMatchingSku.map(p => p.id);
+
+      // Combinar condiciones: búsqueda en campos principales O productos con SKU coincidente
+      if (productIdsWithMatchingSku.length > 0) {
+        where[Op.or] = [
+          ...mainSearchConditions,
+          { id: { [Op.in]: productIdsWithMatchingSku } }
+        ];
+      } else {
+        where[Op.or] = mainSearchConditions;
+      }
+      
+      console.log('🔍 Products with matching SKU:', productIdsWithMatchingSku);
+      console.log('🔍 Final search conditions:', JSON.stringify(where[Op.or], null, 2));
     }
+
+    // Siempre incluir variantes para mostrar información completa y calcular stock total
+    includeArray.push({
+      model: ProductVariant,
+      as: 'variants',
+      attributes: ['id', 'sku', 'stock'],
+      required: false
+    });
+
+    // Incluir imágenes del producto para mostrar la imagen principal
+    includeArray.push({
+      model: ImgColorProduct,
+      as: 'colorImages',
+      attributes: ['id', 'img', 'color_id'],
+      required: false,
+      limit: 1 // Solo necesitamos una imagen para mostrar como principal
+    });
 
     if (category && category !== 'all') {
       where.category_id = category;
@@ -92,19 +146,58 @@ export const getAdminProducts = async (req, res) => {
 
     const { count, rows: products } = await Product.findAndCountAll({
       where,
-      include: [{
-        model: Category,
-        as: 'category',
-        attributes: ['id', 'name']
-      }],
+      include: includeArray,
       order: [[sortBy, sortOrder]],
       limit: parseInt(limit),
-      offset
+      offset,
+      distinct: true // Para evitar duplicados cuando hay múltiples variantes
     });
+
+    // Calcular stock total para cada producto sumando el stock de todas sus variantes
+    const productsWithTotalStock = products.map(product => {
+      const productData = product.toJSON();
+      
+      // Calcular stock total sumando todas las variantes
+      let totalStock = 0;
+      if (productData.variants && productData.variants.length > 0) {
+        totalStock = productData.variants.reduce((sum, variant) => {
+          return sum + (variant.stock || 0);
+        }, 0);
+      }
+      
+      // Agregar el campo total_stock al producto
+      productData.total_stock = totalStock;
+      
+      // Determinar imagen principal (primera imagen disponible)
+      let mainImage = null;
+      if (productData.colorImages && productData.colorImages.length > 0) {
+        // Tomar la primera imagen disponible como imagen principal
+        const firstImage = productData.colorImages[0];
+        if (firstImage && firstImage.img) {
+          mainImage = `/uploads/products/${firstImage.img}`;
+        }
+      }
+      productData.main_image = mainImage;
+      
+      return productData;
+    });
+
+    console.log('📊 Found products count:', count);
+    console.log('📊 Returned products:', productsWithTotalStock.length);
+    if (search) {
+      console.log('📊 Search results for "' + search + '":', productsWithTotalStock.map(p => ({
+        id: p.id,
+        name: p.name,
+        description: p.description?.substring(0, 50),
+        total_stock: p.total_stock,
+        main_image: p.main_image,
+        variants: p.variants?.map(v => ({ sku: v.sku, stock: v.stock }))
+      })));
+    }
 
     res.json({
       success: true,
-      data: products,
+      data: productsWithTotalStock,
       pagination: {
         currentPage: parseInt(page),
         totalPages: Math.ceil(count / limit),

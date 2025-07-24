@@ -46,6 +46,7 @@ export const helmetConfig = helmet({
       upgradeInsecureRequests: [],
     },
   },
+  crossOriginResourcePolicy: { policy: "cross-origin" },
   crossOriginEmbedderPolicy: false,
 });
 

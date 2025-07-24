@@ -58,6 +58,7 @@ const productForm = ref({
 
 // Computed
 const filteredProductsCount = computed(() => pagination.value.totalItems || 0);
+const apiBaseUrl = computed(() => import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000');
 
 // Methods
 const loadProducts = async () => {
@@ -71,10 +72,12 @@ const loadProducts = async () => {
     sortOrder: sortOrder.value
   };
 
+  console.log('📤 Frontend sending params:', params);
   const result = await getAdminProducts(params);
   if (result) {
     products.value = result.data;
     pagination.value = result.pagination;
+    console.log('📥 Frontend received products:', result.data.length, 'items');
   }
 };
 
@@ -117,6 +120,7 @@ const loadColors = async () => {
 };
 
 const searchProducts = () => {
+  console.log('🔍 Frontend searching for:', searchTerm.value);
   currentPage.value = 1;
   loadProducts();
 };
@@ -464,6 +468,13 @@ const getSizeName = (sizeId) => {
   return size ? size.name : 'Talla';
 };
 
+// Manejar error de carga de imagen
+const handleImageError = (event) => {
+  event.target.style.display = 'none';
+  const container = event.target.parentNode;
+  container.innerHTML = '<i class="fas fa-image" style="color: #ccc;"></i>';
+};
+
 
 const formatPrice = (price) => {
   return new Intl.NumberFormat('es-CO', {
@@ -569,8 +580,17 @@ onMounted(() => {
           <tbody>
             <tr v-for="product in products" :key="product.id">
               <td>
-                <div style="width: 60px; height: 60px; background: #f5f5f5; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
-                  <i class="fas fa-image" style="color: #ccc;"></i>
+                <div style="width: 60px; height: 60px; background: #f5f5f5; border-radius: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                  <img 
+                    v-if="product.main_image" 
+                    :src="`${apiBaseUrl}${product.main_image}`"
+                    :alt="product.name"
+                    style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px; cursor: pointer; transition: transform 0.2s ease;"
+                    @mouseover="$event.target.style.transform = 'scale(1.05)'"
+                    @mouseout="$event.target.style.transform = 'scale(1)'"
+                    @error="handleImageError"
+                  />
+                  <i v-else class="fas fa-image" style="color: #ccc;"></i>
                 </div>
               </td>
               <td>
@@ -592,8 +612,8 @@ onMounted(() => {
                 </div>
               </td>
               <td>
-                <span :style="{ color: product.stock <= 0 ? '#dc3545' : product.stock <= 10 ? '#ffc107' : '#28a745' }">
-                  {{ product.stock }}
+                <span :style="{ color: product.total_stock <= 0 ? '#dc3545' : product.total_stock <= 10 ? '#ffc107' : '#28a745' }">
+                  {{ product.total_stock || 0 }}
                 </span>
               </td>
               <td>
@@ -883,13 +903,30 @@ onMounted(() => {
 
         <!-- View Mode -->
         <div v-else-if="selectedProduct">
+          <!-- Imagen del producto -->
+          <div v-if="selectedProduct.main_image" style="text-align: center; margin-bottom: 1.5rem;">
+            <img 
+              :src="`${apiBaseUrl}${selectedProduct.main_image}`"
+              :alt="selectedProduct.name"
+              style="max-width: 200px; max-height: 200px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd;"
+              @error="handleImageError"
+            />
+          </div>
+          
           <div style="display: grid; gap: 1rem;">
             <div><strong>Nombre:</strong> {{ selectedProduct.name }}</div>
             <div><strong>Descripción:</strong> {{ selectedProduct.description }}</div>
             <div><strong>Precio:</strong> {{ formatPrice(selectedProduct.price) }}</div>
             <div><strong>Descuento:</strong> {{ selectedProduct.discount_percentage }}%</div>
-            <div><strong>Stock:</strong> {{ selectedProduct.stock }}</div>
-            <div><strong>SKU:</strong> {{ selectedProduct.sku }}</div>
+            <div><strong>Stock Total:</strong> {{ selectedProduct.total_stock || 0 }}</div>
+            <div v-if="selectedProduct.variants && selectedProduct.variants.length > 0" style="margin: 1rem 0;">
+              <strong>Desglose por Variantes:</strong>
+              <div style="margin-left: 1rem; font-size: 0.9rem;">
+                <div v-for="variant in selectedProduct.variants" :key="variant.id" style="margin: 0.25rem 0;">
+                  • SKU: {{ variant.sku }} - Stock: {{ variant.stock || 0 }}
+                </div>
+              </div>
+            </div>
             <div><strong>Categoría:</strong> {{ selectedProduct.category?.name }}</div>
             <div><strong>Estado:</strong> 
               <span :style="{ color: selectedProduct.is_active ? '#28a745' : '#dc3545' }">
