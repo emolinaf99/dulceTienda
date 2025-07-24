@@ -466,60 +466,91 @@ export const updateProduct = async (req, res) => {
       }
     }
 
-    // Manejar imágenes si se enviaron
-    if (req.files && req.files.length > 0) {
-      // Eliminar imágenes existentes del producto
-      const existingImages = await ImgColorProduct.findAll({
-        where: { product_id: product.id },
-        transaction
-      });
+    // Manejar imágenes - conservar existentes especificadas y agregar nuevas
+    const keepExistingImagesData = req.body.keepExistingImages ? 
+      (typeof req.body.keepExistingImages === 'string' ? 
+        JSON.parse(req.body.keepExistingImages) : req.body.keepExistingImages) : [];
 
-      // Eliminar archivos físicos de imágenes existentes
-      for (const img of existingImages) {
-        const imagePath = path.join('public', img.image_url);
-        try {
-          if (fSync.existsSync(imagePath)) {
-            await fs.unlink(imagePath);
-          }
-        } catch (err) {
-          console.error('Error eliminando imagen existente:', err);
+    console.log('🖼️ Keep existing images:', keepExistingImagesData);
+
+    // Obtener todas las imágenes existentes del producto
+    const allExistingImages = await ImgColorProduct.findAll({
+      where: { product_id: product.id },
+      transaction
+    });
+
+    // Determinar qué imágenes eliminar (las que existen pero no están en keepExistingImages)
+    const imagesToKeep = keepExistingImagesData.map(img => 
+      img.img_url.replace('/uploads/products/', '')
+    );
+    
+    const imagesToDelete = allExistingImages.filter(img => 
+      !imagesToKeep.includes(img.img)
+    );
+
+    console.log('🗑️ Images to delete:', imagesToDelete.map(img => img.img));
+    console.log('✅ Images to keep:', imagesToKeep);
+
+    // Eliminar archivos físicos de las imágenes que se van a eliminar
+    for (const img of imagesToDelete) {
+      const imagePath = path.join('public', 'uploads', 'products', img.img);
+      try {
+        if (fSync.existsSync(imagePath)) {
+          await fs.unlink(imagePath);
+          console.log('🗑️ Deleted file:', imagePath);
         }
+      } catch (err) {
+        console.error('❌ Error eliminando imagen:', err);
       }
+    }
 
-      // Eliminar registros de imágenes existentes
+    // Eliminar registros de imágenes que no se van a conservar
+    if (imagesToDelete.length > 0) {
       await ImgColorProduct.destroy({
-        where: { product_id: product.id },
+        where: { 
+          product_id: product.id,
+          img: { [Op.in]: imagesToDelete.map(img => img.img) }
+        },
         transaction
       });
+    }
 
-      // Procesar nuevas imágenes por color
-      const imagesByColor = {};
+    // Procesar nuevas imágenes si se enviaron
+    if (req.files && req.files.length > 0) {
+      const newImagesToCreate = [];
       
       req.files.forEach(file => {
-        const colorId = file.fieldname.split('_')[1]; // Asume formato "color_1_images"
-        if (!imagesByColor[colorId]) {
-          imagesByColor[colorId] = [];
-        }
-        imagesByColor[colorId].push({
+        const colorId = file.fieldname.split('_')[1]; // Formato "color_1_images"
+        newImagesToCreate.push({
           product_id: product.id,
           color_id: parseInt(colorId),
-          image_url: '/uploads/products/' + file.filename,
-          is_main: imagesByColor[colorId].length === 0 // Primera imagen es principal
+          img: file.filename
         });
       });
 
-      // Crear registros de nuevas imágenes
-      for (const colorId of Object.keys(imagesByColor)) {
-        await ImgColorProduct.bulkCreate(imagesByColor[colorId], { transaction });
-      }
+      console.log('➕ New images to create:', newImagesToCreate);
 
-      // Actualizar main_image del producto con la primera imagen
-      const firstImage = Object.values(imagesByColor)[0]?.[0];
-      if (firstImage) {
-        await product.update({
-          main_image: firstImage.image_url
-        }, { transaction });
+      // Crear registros de nuevas imágenes
+      if (newImagesToCreate.length > 0) {
+        await ImgColorProduct.bulkCreate(newImagesToCreate, { transaction });
       }
+    }
+
+    // Actualizar main_image del producto
+    const remainingImages = await ImgColorProduct.findAll({
+      where: { product_id: product.id },
+      transaction,
+      limit: 1
+    });
+
+    if (remainingImages.length > 0) {
+      await product.update({
+        main_image: `/uploads/products/${remainingImages[0].img}`
+      }, { transaction });
+    } else {
+      await product.update({
+        main_image: null
+      }, { transaction });
     }
 
     await transaction.commit();

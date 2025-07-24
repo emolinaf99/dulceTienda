@@ -137,13 +137,19 @@ export const getAdminProducts = async (req, res) => {
       required: false
     });
 
-    // Incluir imágenes del producto para mostrar la imagen principal
+    // Incluir todas las imágenes del producto organizadas por color
     includeArray.push({
       model: ImgColorProduct,
       as: 'colorImages',
       attributes: ['id', 'img', 'color_id'],
-      required: false,
-      limit: 1 // Solo necesitamos una imagen para mostrar como principal
+      include: [
+        {
+          model: Color,
+          as: 'color',
+          attributes: ['id', 'name', 'hex_code']
+        }
+      ],
+      required: false
     });
 
     if (category && category !== 'all') {
@@ -180,10 +186,9 @@ export const getAdminProducts = async (req, res) => {
       // Agregar el campo total_stock al producto
       productData.total_stock = totalStock;
       
-      // Determinar imagen principal (primera imagen disponible)
+      // Determinar imagen principal (tomar la primera imagen disponible)
       let mainImage = null;
       if (productData.colorImages && productData.colorImages.length > 0) {
-        // Tomar la primera imagen disponible como imagen principal
         const firstImage = productData.colorImages[0];
         if (firstImage && firstImage.img) {
           mainImage = `/uploads/products/${firstImage.img}`;

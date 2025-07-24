@@ -244,16 +244,22 @@ const populateForm = (product) => {
   
   // Cargar imágenes existentes por color
   if (product.colorImages && product.colorImages.length > 0) {
+    console.log('🖼️ Loading existing images:', product.colorImages);
+    
     colorImages.value = {};
     product.colorImages.forEach(img => {
+      console.log('🖼️ Processing image:', img);
+      
       if (!colorImages.value[img.color_id]) {
         colorImages.value[img.color_id] = [];
       }
       colorImages.value[img.color_id].push({
-        url: img.image_url,
+        url: `/uploads/products/${img.img}`,
         isExisting: true
       });
     });
+    
+    console.log('🖼️ Final colorImages structure:', colorImages.value);
   }
 };
 
@@ -299,20 +305,23 @@ const handleSubmit = async () => {
     
     console.log('Prepared variants:', variants);
     
-    // Preparar imágenes por color
-    const colorImagesData = [];
-    console.log('ColorImages object:', colorImages.value);
-    
+    // Preparar información sobre imágenes existentes a conservar
+    const keepExistingImages = [];
     selectedColors.value.forEach(colorId => {
       if (colorImages.value[colorId] && colorImages.value[colorId].length > 0) {
-        colorImagesData.push({
-          color_id: colorId,
-          images: colorImages.value[colorId]
+        colorImages.value[colorId].forEach(img => {
+          if (img.isExisting) {
+            // Solo agregar imágenes existentes que queremos conservar
+            keepExistingImages.push({
+              color_id: colorId,
+              img_url: img.url
+            });
+          }
         });
       }
     });
     
-    console.log('Prepared color images data:', colorImagesData);
+    console.log('🖼️ Existing images to keep:', keepExistingImages);
     
     // Add basic fields
     console.log('Adding basic fields to FormData:');
@@ -323,11 +332,11 @@ const handleSubmit = async () => {
       }
     });
     
-    // Add variants and colorImages as JSON
+    // Add variants and existing images info as JSON
     console.log('Adding variants as JSON:', JSON.stringify(variants));
-    console.log('Adding colorImages as JSON:', JSON.stringify(colorImagesData));
+    console.log('Adding keepExistingImages as JSON:', JSON.stringify(keepExistingImages));
     formData.append('variants', JSON.stringify(variants));
-    formData.append('colorImages', JSON.stringify(colorImagesData));
+    formData.append('keepExistingImages', JSON.stringify(keepExistingImages));
     
     // Add images with color info in fieldname
     selectedColors.value.forEach(colorId => {
