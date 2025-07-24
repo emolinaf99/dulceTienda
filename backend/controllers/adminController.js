@@ -121,7 +121,19 @@ export const getAdminProducts = async (req, res) => {
     includeArray.push({
       model: ProductVariant,
       as: 'variants',
-      attributes: ['id', 'sku', 'stock'],
+      attributes: ['id', 'sku', 'stock', 'color_id', 'size_id'],
+      include: [
+        {
+          model: Size,
+          as: 'size',
+          attributes: ['id', 'name']
+        },
+        {
+          model: Color,
+          as: 'color',
+          attributes: ['id', 'name', 'hex_code']
+        }
+      ],
       required: false
     });
 

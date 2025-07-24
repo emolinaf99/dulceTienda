@@ -374,9 +374,23 @@ export const createProduct = async (req, res) => {
 };
 
 export const updateProduct = async (req, res) => {
+  const transaction = await sequelize.transaction();
+  
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      await transaction.rollback();
+      
+      if (req.files) {
+        req.files.forEach(async (file) => {
+          try {
+            await fs.unlink(file.path);
+          } catch (err) {
+            console.error('Error eliminando archivo:', err);
+          }
+        });
+      }
+      
       return res.status(400).json({
         success: false,
         message: 'Datos de entrada inválidos',
@@ -385,9 +399,21 @@ export const updateProduct = async (req, res) => {
     }
 
     const { id } = req.params;
-    const product = await Product.findByPk(id);
+    const product = await Product.findByPk(id, { transaction });
 
     if (!product) {
+      await transaction.rollback();
+      
+      if (req.files) {
+        req.files.forEach(async (file) => {
+          try {
+            await fs.unlink(file.path);
+          } catch (err) {
+            console.error('Error eliminando archivo:', err);
+          }
+        });
+      }
+      
       return res.status(404).json({
         success: false,
         message: 'Producto no encontrado'
@@ -401,10 +427,11 @@ export const updateProduct = async (req, res) => {
       discount_percentage,
       category_id,
       is_featured,
-      is_active
+      is_active,
+      variants: variantsData
     } = req.body;
 
-    // Actualizar solo los campos básicos del producto
+    // Actualizar campos básicos del producto
     await product.update({
       name,
       description,
@@ -413,8 +440,91 @@ export const updateProduct = async (req, res) => {
       category_id,
       is_featured,
       is_active
-    });
+    }, { transaction });
 
+    // Si hay datos de variantes, actualizarlas
+    if (variantsData) {
+      const variants = typeof variantsData === 'string' ? JSON.parse(variantsData) : variantsData;
+      
+      // Eliminar variantes existentes
+      await ProductVariant.destroy({
+        where: { product_id: product.id },
+        transaction
+      });
+
+      // Crear nuevas variantes
+      if (variants && variants.length > 0) {
+        const variantsToCreate = variants.map(variant => ({
+          product_id: product.id,
+          size_id: variant.size_id,
+          color_id: variant.color_id,
+          stock: variant.stock || 0,
+          sku: variant.sku || `${product.id}-${variant.color_id}-${variant.size_id}`
+        }));
+
+        await ProductVariant.bulkCreate(variantsToCreate, { transaction });
+      }
+    }
+
+    // Manejar imágenes si se enviaron
+    if (req.files && req.files.length > 0) {
+      // Eliminar imágenes existentes del producto
+      const existingImages = await ImgColorProduct.findAll({
+        where: { product_id: product.id },
+        transaction
+      });
+
+      // Eliminar archivos físicos de imágenes existentes
+      for (const img of existingImages) {
+        const imagePath = path.join('public', img.image_url);
+        try {
+          if (fSync.existsSync(imagePath)) {
+            await fs.unlink(imagePath);
+          }
+        } catch (err) {
+          console.error('Error eliminando imagen existente:', err);
+        }
+      }
+
+      // Eliminar registros de imágenes existentes
+      await ImgColorProduct.destroy({
+        where: { product_id: product.id },
+        transaction
+      });
+
+      // Procesar nuevas imágenes por color
+      const imagesByColor = {};
+      
+      req.files.forEach(file => {
+        const colorId = file.fieldname.split('_')[1]; // Asume formato "color_1_images"
+        if (!imagesByColor[colorId]) {
+          imagesByColor[colorId] = [];
+        }
+        imagesByColor[colorId].push({
+          product_id: product.id,
+          color_id: parseInt(colorId),
+          image_url: '/uploads/products/' + file.filename,
+          is_main: imagesByColor[colorId].length === 0 // Primera imagen es principal
+        });
+      });
+
+      // Crear registros de nuevas imágenes
+      for (const colorId of Object.keys(imagesByColor)) {
+        await ImgColorProduct.bulkCreate(imagesByColor[colorId], { transaction });
+      }
+
+      // Actualizar main_image del producto con la primera imagen
+      const firstImage = Object.values(imagesByColor)[0]?.[0];
+      if (firstImage) {
+        await product.update({
+          main_image: firstImage.image_url
+        }, { transaction });
+      }
+    }
+
+    await transaction.commit();
+
+    // Obtener producto actualizado con todas las relaciones
     const updatedProduct = await Product.findByPk(product.id, {
       include: [
         {
@@ -446,6 +556,7 @@ export const updateProduct = async (req, res) => {
       data: { product: updatedProduct }
     });
   } catch (error) {
+    await transaction.rollback();
     console.error('Error actualizando producto:', error);
     
     if (req.files) {

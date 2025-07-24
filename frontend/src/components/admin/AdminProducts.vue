@@ -192,26 +192,68 @@ const populateForm = (product) => {
     colorImages: product.colorImages || []
   };
   
-  // Reconstruir configuración por color desde variantes existentes
-  if (product.variants && product.variants.length > 0) {
-    selectedColors.value = [...new Set(product.variants.map(v => v.color_id))];
-    
-    // Agrupar variantes por color
-    const colorConfig = {};
-    product.variants.forEach(variant => {
-      if (!colorConfig[variant.color_id]) {
-        colorConfig[variant.color_id] = {
-          sizes: []
-        };
-      }
-      colorConfig[variant.color_id].sizes.push(variant.size_id);
-    });
-    colorSizeConfig.value = colorConfig;
-  }
-  
-  // Filtrar tallas por categoria al editar
+  // Filtrar tallas por categoria ANTES de procesar variantes
   if (product.category_id) {
     filterSizesByCategory();
+  }
+  
+  // Reconstruir configuración por color desde variantes existentes
+  if (product.variants && product.variants.length > 0) {
+    // Extraer colores únicos de las variantes
+    const uniqueColorIds = [...new Set(product.variants.map(v => parseInt(v.color_id)))];
+    selectedColors.value = uniqueColorIds;
+    
+    // Agrupar variantes por color con stock
+    const colorConfig = {};
+    const stockData = {};
+    
+    product.variants.forEach(variant => {
+      const colorId = parseInt(variant.color_id);
+      const sizeId = parseInt(variant.size_id);
+      
+      if (!colorConfig[colorId]) {
+        colorConfig[colorId] = {
+          sizes: []
+        };
+        stockData[colorId] = {};
+      }
+      
+      if (!colorConfig[colorId].sizes.includes(sizeId)) {
+        colorConfig[colorId].sizes.push(sizeId);
+      }
+      
+      // Guardar stock para cada combinación color-talla
+      stockData[colorId][sizeId] = variant.stock || 0;
+    });
+    
+    colorSizeConfig.value = colorConfig;
+    
+    // Cargar valores de stock en los inputs después de un pequeño delay
+    // para asegurar que los elementos DOM estén renderizados
+    setTimeout(() => {
+      Object.keys(stockData).forEach(colorId => {
+        Object.keys(stockData[colorId]).forEach(sizeId => {
+          const input = document.getElementById(`stock_${colorId}_${sizeId}`);
+          if (input) {
+            input.value = stockData[colorId][sizeId];
+          }
+        });
+      });
+    }, 100);
+  }
+  
+  // Cargar imágenes existentes por color
+  if (product.colorImages && product.colorImages.length > 0) {
+    colorImages.value = {};
+    product.colorImages.forEach(img => {
+      if (!colorImages.value[img.color_id]) {
+        colorImages.value[img.color_id] = [];
+      }
+      colorImages.value[img.color_id].push({
+        url: img.image_url,
+        isExisting: true
+      });
+    });
   }
 };
 
@@ -287,11 +329,14 @@ const handleSubmit = async () => {
     formData.append('variants', JSON.stringify(variants));
     formData.append('colorImages', JSON.stringify(colorImagesData));
     
-    // Add images
+    // Add images with color info in fieldname
     selectedColors.value.forEach(colorId => {
       if (colorImages.value[colorId]) {
         colorImages.value[colorId].forEach((file, index) => {
-          formData.append(`images`, file);
+          // Solo agregar archivos nuevos (no imágenes existentes)
+          if (file instanceof File) {
+            formData.append(`color_${colorId}_images`, file);
+          }
         });
       }
     });
@@ -473,6 +518,19 @@ const handleImageError = (event) => {
   event.target.style.display = 'none';
   const container = event.target.parentNode;
   container.innerHTML = '<i class="fas fa-image" style="color: #ccc;"></i>';
+};
+
+const removeExistingImage = (colorId, imgIndex) => {
+  if (colorImages.value[colorId] && colorImages.value[colorId][imgIndex]) {
+    colorImages.value[colorId].splice(imgIndex, 1);
+    
+    // Si no quedan imágenes para este color, eliminar la entrada
+    if (colorImages.value[colorId].length === 0) {
+      delete colorImages.value[colorId];
+    }
+    
+    mostrarNotificacion('Imagen marcada para eliminación. Guarda los cambios para confirmar.', 1);
+  }
 };
 
 
@@ -860,9 +918,39 @@ onMounted(() => {
                 </div>
               </div>
 
+              <!-- Imágenes existentes para este color -->
+              <div v-if="colorImages[colorId] && colorImages[colorId].length > 0" class="adminFormGroup" style="margin-bottom: 1rem;">
+                <label>Imágenes actuales para {{ getColorName(colorId) }}</label>
+                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
+                  <div 
+                    v-for="(img, imgIndex) in colorImages[colorId]" 
+                    :key="`existing-${colorId}-${imgIndex}`"
+                    style="position: relative; width: 80px; height: 80px; border: 2px solid #ddd; border-radius: 8px; overflow: hidden;"
+                  >
+                    <img 
+                      :src="`${apiBaseUrl}${img.url}`" 
+                      :alt="`Imagen ${imgIndex + 1}`"
+                      style="width: 100%; height: 100%; object-fit: cover;"
+                      @error="handleImageError"
+                    />
+                    <button 
+                      type="button"
+                      @click="removeExistingImage(colorId, imgIndex)"
+                      style="position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; border-radius: 50%; background: #dc3545; color: white; border: none; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;"
+                      title="Eliminar imagen"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+                <small style="color: #666; display: block; margin-top: 0.25rem;">
+                  Estas son las imágenes actuales. Puedes eliminarlas o agregar nuevas abajo.
+                </small>
+              </div>
+
               <!-- Imágenes para este color -->
               <div class="adminFormGroup">
-                <label>Imágenes para {{ getColorName(colorId) }} *</label>
+                <label>{{ modalMode === 'edit' && colorImages[colorId] && colorImages[colorId].length > 0 ? 'Agregar nuevas imágenes' : 'Imágenes' }} para {{ getColorName(colorId) }} {{ modalMode === 'create' ? '*' : '' }}</label>
                 <input 
                   @change="handleColorImageChange(colorId, $event)" 
                   type="file" 
