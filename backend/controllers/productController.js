@@ -1,8 +1,10 @@
-import { Product, Category, ProductVariant, Size, Color, ImgColorProduct } from '../models/associations.js';
+import { Product, Category, ProductVariant, Size, Color, ImgColorProduct, Cart, Favorite, OrderItem } from '../models/associations.js';
 import { validationResult } from 'express-validator';
 import { Op } from 'sequelize';
 import fs from 'fs/promises';
+import fSync from 'fs';
 import path from 'path';
+import sequelize from '../config/database.js';
 
 export const getAllProducts = async (req, res) => {
   try {
@@ -463,7 +465,7 @@ export const updateProduct = async (req, res) => {
   }
 };
 
-export const deleteProduct = async (req, res) => {
+export const deactivateProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const product = await Product.findByPk(id);
@@ -479,13 +481,113 @@ export const deleteProduct = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Producto eliminado exitosamente'
+      message: 'Producto desactivado exitosamente',
+      action: 'deactivated'
     });
   } catch (error) {
-    console.error('Error eliminando producto:', error);
+    console.error('Error desactivando producto:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
+    });
+  }
+};
+
+export const deleteProduct = async (req, res) => {
+  const t = await sequelize.transaction();
+  
+  try {
+    const { id } = req.params;
+    const product = await Product.findByPk(id);
+    
+    if (!product) {
+      await t.rollback();
+      return res.status(404).json({
+        success: false,
+        message: 'Producto no encontrado'
+      });
+    }
+
+    console.log(`Iniciando eliminación del producto ID: ${id}`);
+
+    // Verificar si el producto tiene órdenes asociadas
+    const orderItemsCount = await OrderItem.count({
+      where: { product_id: id }
+    });
+
+    if (orderItemsCount > 0) {
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message: `No se puede eliminar el producto porque tiene ${orderItemsCount} orden(es) asociada(s). Solo se puede desactivar.`,
+        canOnlyDeactivate: true
+      });
+    }
+
+    // 1. Eliminar imágenes del producto de las carpetas físicas
+    const productImages = await ImgColorProduct.findAll({
+      where: { product_id: id },
+      transaction: t
+    });
+
+    for (const imgRecord of productImages) {
+      if (imgRecord.img) {
+        const fullPath = path.join(process.cwd(), 'public', 'uploads', 'products', imgRecord.img);
+        try {
+          if (fSync.existsSync(fullPath)) {
+            fSync.unlinkSync(fullPath);
+            console.log(`Imagen eliminada: ${fullPath}`);
+          }
+        } catch (fileError) {
+          console.warn(`Error eliminando imagen ${fullPath}:`, fileError.message);
+        }
+      }
+    }
+
+    // 2. Eliminar registros de tablas relacionadas
+    console.log('Eliminando registros de ImgColorProduct...');
+    await ImgColorProduct.destroy({
+      where: { product_id: id },
+      transaction: t
+    });
+
+    console.log('Eliminando registros de ProductVariant...');
+    await ProductVariant.destroy({
+      where: { product_id: id },
+      transaction: t
+    });
+
+    console.log('Eliminando registros de Cart...');
+    await Cart.destroy({
+      where: { product_id: id },
+      transaction: t
+    });
+
+    console.log('Eliminando registros de Favorite...');
+    await Favorite.destroy({
+      where: { product_id: id },
+      transaction: t
+    });
+
+    // 3. Finalmente eliminar el producto
+    console.log('Eliminando el producto...');
+    await product.destroy({ transaction: t });
+
+    await t.commit();
+
+    res.json({
+      success: true,
+      message: 'Producto eliminado exitosamente',
+      deletedProductId: id,
+      action: 'deleted'
+    });
+
+  } catch (error) {
+    await t.rollback();
+    console.error('Error eliminando producto:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor al eliminar el producto'
     });
   }
 };

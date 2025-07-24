@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useAdminApi } from '@/js/composables/useAdminApi.js';
+import mostrarNotificacion from '@/js/mensajeNotificacionFront.js';
 
 const {
   getAdminUsers,
@@ -69,7 +70,11 @@ const closeUserModal = () => {
 const handleToggleStatus = async (user) => {
   const result = await toggleUserStatus(user.id);
   if (result) {
+    const statusMessage = result.data.is_active ? 'Usuario activado exitosamente' : 'Usuario desactivado exitosamente';
+    mostrarNotificacion(statusMessage, 1);
     loadUsers();
+  } else {
+    mostrarNotificacion(error.value || 'Error al cambiar el estado del usuario', 0);
   }
 };
 

@@ -279,8 +279,8 @@ export const getAdminSizes = async (req, res) => {
         attributes: ['id', 'name', 'type_size_id']
       }],
       order: [
-        ['description', 'ASC'],
-        [{ model: Size, as: 'sizes' }, 'name', 'ASC']
+        ['id', 'ASC'],
+        [{ model: Size, as: 'sizes' }, 'id', 'ASC']
       ]
     });
 
@@ -301,7 +301,7 @@ export const getAdminSizes = async (req, res) => {
 export const getAdminTypeSizes = async (req, res) => {
   try {
     const typeSizes = await TypeSize.findAll({
-      order: [['description', 'ASC']]
+      order: [['id', 'ASC']]
     });
 
     res.json({
@@ -321,7 +321,7 @@ export const getAdminTypeSizes = async (req, res) => {
 export const getAdminColors = async (req, res) => {
   try {
     const colors = await Color.findAll({
-      order: [['name', 'ASC']]
+      order: [['id', 'ASC']]
     });
 
     res.json({

@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useAdminApi } from '@/js/composables/useAdminApi.js';
+import mostrarNotificacion from '@/js/mensajeNotificacionFront.js';
 
 const {
   getAdminCategories,
@@ -115,15 +116,23 @@ const handleSubmit = async () => {
   }
 
   if (result) {
+    const successMessage = modalMode.value === 'create' ? 'Categoría creada exitosamente' : 'Categoría actualizada exitosamente';
+    mostrarNotificacion(successMessage, 1);
     closeModal();
     loadCategories();
+  } else {
+    mostrarNotificacion(error.value || 'Error al procesar la categoría', 0);
   }
 };
 
 const handleToggleStatus = async (category) => {
   const result = await toggleCategoryStatus(category.id);
   if (result) {
+    const statusMessage = result.data.is_active ? 'Categoría activada exitosamente' : 'Categoría desactivada exitosamente';
+    mostrarNotificacion(statusMessage, 1);
     loadCategories();
+  } else {
+    mostrarNotificacion(error.value || 'Error al cambiar el estado de la categoría', 0);
   }
 };
 
@@ -141,14 +150,19 @@ const handleDelete = async () => {
       // Mostrar mensaje específico según la acción realizada
       if (result.action === 'deleted') {
         // Mostrar notificación de eliminación completa
-        console.log('✅ Categoría eliminada completamente:', result.message);
+        mostrarNotificacion('Categoría eliminada completamente', 1);
       } else if (result.action === 'deactivated') {
         // Mostrar notificación de desactivación
-        console.log('⚠️ Categoría desactivada:', result.message);
+        mostrarNotificacion('Categoría desactivada debido a productos asociados', 1);
+      } else {
+        // Fallback para otros casos
+        mostrarNotificacion(result.message || 'Operación realizada exitosamente', 1);
       }
       
       categoryToDelete.value = null;
       loadCategories();
+    } else {
+      mostrarNotificacion(error.value || 'Error al procesar la categoría', 0);
     }
   }
 };

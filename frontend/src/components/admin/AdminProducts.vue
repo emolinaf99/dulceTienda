@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useAdminApi } from '@/js/composables/useAdminApi.js';
+import mostrarNotificacion from '@/js/mensajeNotificacionFront.js';
 
 const {
   getAdminProducts,
@@ -11,6 +12,7 @@ const {
   createProduct,
   updateProduct,
   deleteProduct,
+  deactivateProduct,
   loading,
   error
 } = useAdminApi();
@@ -31,6 +33,7 @@ const showModal = ref(false);
 const modalMode = ref('create'); // create, edit, view
 const selectedProduct = ref(null);
 const showDeleteConfirm = ref(false);
+const showDeactivateConfirm = ref(false);
 const productToDelete = ref(null);
 
 // Nuevos estados para colores y variantes
@@ -214,7 +217,7 @@ const handleSubmit = async () => {
     
     // Validar que hay colores seleccionados
     if (selectedColors.value.length === 0) {
-      alert('Por favor selecciona al menos un color');
+      mostrarNotificacion('Por favor selecciona al menos un color', 0);
       return;
     }
     
@@ -226,7 +229,7 @@ const handleSubmit = async () => {
       const colorConfig = colorSizeConfig.value[colorId];
       
       if (!colorConfig?.sizes || colorConfig.sizes.length === 0) {
-        alert(`Por favor selecciona al menos una talla para el color ${getColorName(colorId)}`);
+        mostrarNotificacion(`Por favor selecciona al menos una talla para el color ${getColorName(colorId)}`, 0);
         return;
       }
       
@@ -244,7 +247,7 @@ const handleSubmit = async () => {
     });
     
     if (!hasValidVariants) {
-      alert('Por favor configura al menos una variante válida');
+      mostrarNotificacion('Por favor configura al menos una variante válida', 0);
       return;
     }
     
@@ -297,22 +300,29 @@ const handleSubmit = async () => {
     }
 
     if (result) {
+      const successMessage = modalMode.value === 'create' ? 'Producto creado exitosamente' : 'Producto actualizado exitosamente';
+      mostrarNotificacion(successMessage, 1);
       closeModal();
       loadProducts();
     } else {
-      // Si hay error en la API, se mostrará automáticamente por useAdminApi
+      // Si hay error en la API, mostrar notificación de error
+      mostrarNotificacion(error.value || 'Error al procesar la operación', 0);
       console.error('Failed to submit product form');
     }
   } catch (err) {
     console.error('Error submitting form:', err);
-    alert('Error al enviar el formulario: ' + err.message);
+    mostrarNotificacion('Error al enviar el formulario: ' + err.message, 0);
   }
 };
 
 const handleToggleStatus = async (product) => {
   const result = await toggleProductStatus(product.id);
   if (result) {
+    const statusMessage = result.data.is_active ? 'Producto activado exitosamente' : 'Producto desactivado exitosamente';
+    mostrarNotificacion(statusMessage, 1);
     loadProducts();
+  } else {
+    mostrarNotificacion(error.value || 'Error al cambiar el estado del producto', 0);
   }
 };
 
@@ -324,12 +334,40 @@ const confirmDelete = (product) => {
 const handleDelete = async () => {
   if (productToDelete.value) {
     const result = await deleteProduct(productToDelete.value.id);
-    if (result) {
+    
+    if (result && result.canOnlyDeactivate) {
+      // Mostrar mensaje y ofrecer desactivación
+      mostrarNotificacion(result.message, 0);
+      
+      // Cambiar de modal de eliminación a modal de desactivación
+      showDeleteConfirm.value = false;
+      showDeactivateConfirm.value = true;
+      
+    } else if (result) {
+      // Eliminación exitosa
+      mostrarNotificacion(result.message || 'Producto eliminado exitosamente', 1);
       showDeleteConfirm.value = false;
       productToDelete.value = null;
       loadProducts();
     }
   }
+};
+
+const handleDeactivate = async () => {
+  if (productToDelete.value) {
+    const deactivateResult = await deactivateProduct(productToDelete.value.id);
+    if (deactivateResult) {
+      mostrarNotificacion('Producto desactivado exitosamente', 1);
+      showDeactivateConfirm.value = false;
+      productToDelete.value = null;
+      loadProducts();
+    }
+  }
+};
+
+const cancelDeactivate = () => {
+  showDeactivateConfirm.value = false;
+  productToDelete.value = null;
 };
 
 // Filtrar tallas por categoría
@@ -904,6 +942,39 @@ onMounted(() => {
           <button @click="handleDelete" class="adminBtn adminBtnDanger" :disabled="loading">
             <i class="fas fa-trash"></i>
             {{ loading ? 'Eliminando...' : 'Eliminar Producto' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Deactivate Confirmation Modal -->
+    <div v-if="showDeactivateConfirm" class="adminModal" @click.self="cancelDeactivate">
+      <div class="adminModalContent" style="max-width: 450px;">
+        <div class="adminModalHeader">
+          <h3 style="color: #ffc107;">
+            <i class="fas fa-exclamation-triangle"></i>
+            Desactivar Producto
+          </h3>
+          <button @click="cancelDeactivate" class="adminCloseBtn">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <div style="padding: 1rem 0;">
+          <p>El producto <strong>{{ productToDelete?.name }}</strong> no puede ser eliminado porque tiene órdenes asociadas.</p>
+          <p style="color: #666; font-size: 0.9rem; margin-top: 1rem;">
+            ¿Deseas desactivar el producto en su lugar? El producto seguirá existiendo pero no será visible para los clientes.
+          </p>
+        </div>
+
+        <div class="adminModalActions">
+          <button @click="cancelDeactivate" class="adminBtn adminBtnSecondary">
+            <i class="fas fa-times"></i>
+            Cancelar
+          </button>
+          <button @click="handleDeactivate" class="adminBtn adminBtnWarning" :disabled="loading">
+            <i class="fas fa-eye-slash"></i>
+            {{ loading ? 'Desactivando...' : 'Desactivar Producto' }}
           </button>
         </div>
       </div>

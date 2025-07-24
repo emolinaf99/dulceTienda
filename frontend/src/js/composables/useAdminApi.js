@@ -299,7 +299,30 @@ export function useAdminApi() {
     try {
       const { data, error: apiError } = await useApi(`/api/products/${productId}`, 'DELETE');
       if (apiError.value) {
+        // Si el producto no puede ser eliminado y solo puede ser desactivado
+        if (apiError.value.canOnlyDeactivate) {
+          error.value = apiError.value.message;
+          return { canOnlyDeactivate: true, message: apiError.value.message };
+        }
         error.value = 'Error al eliminar producto';
+        return null;
+      }
+      return data.value;
+    } catch (err) {
+      error.value = 'Error de conexión';
+      return null;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const deactivateProduct = async (productId) => {
+    loading.value = true;
+    clearError();
+    try {
+      const { data, error: apiError } = await useApi(`/api/products/${productId}/deactivate`, 'PATCH');
+      if (apiError.value) {
+        error.value = 'Error al desactivar producto';
         return null;
       }
       return data.value;
@@ -514,6 +537,7 @@ export function useAdminApi() {
     createProduct,
     updateProduct,
     deleteProduct,
+    deactivateProduct,
     // Categories
     getAdminCategories,
     toggleCategoryStatus,

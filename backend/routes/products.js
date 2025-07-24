@@ -5,6 +5,7 @@ import {
   createProduct, 
   updateProduct, 
   deleteProduct,
+  deactivateProduct,
   getNewProducts,
   getSaleProducts 
 } from '../controllers/productController.js';
@@ -35,5 +36,6 @@ router.put('/:id',
 );
 
 router.delete('/:id', authenticate, authorize('admin'), deleteProduct);
+router.patch('/:id/deactivate', authenticate, authorize('admin'), deactivateProduct);
 
 export default router;

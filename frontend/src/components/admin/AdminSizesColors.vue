@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useAdminApi } from '@/js/composables/useAdminApi.js';
+import mostrarNotificacion from '@/js/mensajeNotificacionFront.js';
 
 const {
   getAdminSizes,
@@ -52,23 +53,30 @@ const colorForm = ref({
 const loadSizes = async () => {
   const result = await getAdminSizes();
   if (result) {
-    sizesGroupedByType.value = result.data;
+    // Ordenar tipos de talla por ID y dentro de cada tipo ordenar tallas por ID
+    const sortedData = result.data
+      .sort((a, b) => a.id - b.id) // Ordenar tipos por ID ascendente
+      .map(typeSize => ({
+        ...typeSize,
+        sizes: typeSize.sizes ? typeSize.sizes.sort((a, b) => a.id - b.id) : [] // Ordenar tallas por ID ascendente
+      }));
+    sizesGroupedByType.value = sortedData;
   }
 };
 
 const loadTypeSizes = async () => {
   const result = await getAdminTypeSizes();
   if (result) {
-    // Ordenar tipos de talla por ID descendente (más reciente primero)
-    typeSizes.value = result.data.sort((a, b) => b.id - a.id);
+    // Ordenar tipos de talla por ID ascendente
+    typeSizes.value = result.data.sort((a, b) => a.id - b.id);
   }
 };
 
 const loadColors = async () => {
   const result = await getAdminColors();
   if (result) {
-    // Ordenar colores alfabéticamente por nombre
-    colors.value = result.data.sort((a, b) => a.name.localeCompare(b.name));
+    // Ordenar colores por ID ascendente
+    colors.value = result.data.sort((a, b) => a.id - b.id);
   }
 };
 
@@ -138,6 +146,9 @@ const handleSizeSubmit = async () => {
   }
   
   if (result) {
+    const successMessage = sizeModalMode.value === 'create' ? 'Talla creada exitosamente' : 'Talla actualizada exitosamente';
+    mostrarNotificacion(successMessage, 1);
+    
     // Limpiar cache para asegurar datos frescos
     clearCache('sizes');
     clearCache('typeSizes');
@@ -146,6 +157,8 @@ const handleSizeSubmit = async () => {
     // Recargar datos para mostrar los cambios
     await loadSizes();
     await loadTypeSizes();
+  } else {
+    mostrarNotificacion(error.value || 'Error al procesar la talla', 0);
   }
 };
 
@@ -168,6 +181,9 @@ const handleTypeSizeSubmit = async () => {
   console.log('API result:', result);
   
   if (result) {
+    const successMessage = typeSizeModalMode.value === 'create' ? 'Tipo de talla creado exitosamente' : 'Tipo de talla actualizado exitosamente';
+    mostrarNotificacion(successMessage, 1);
+    
     console.log('Type size operation successful, clearing cache and reloading data...');
     
     // Limpiar cache manualmente para asegurar datos frescos
@@ -184,7 +200,7 @@ const handleTypeSizeSubmit = async () => {
     console.log('Data reloaded successfully');
   } else {
     console.error('Type size operation failed');
-    alert('Error al procesar la operación. Revisa la consola para más detalles.');
+    mostrarNotificacion(error.value || 'Error al procesar el tipo de talla', 0);
   }
   
   console.log('=== HANDLE TYPE SIZE SUBMIT END ===');
@@ -226,8 +242,12 @@ const handleColorSubmit = async () => {
   }
   
   if (result) {
+    const successMessage = colorModalMode.value === 'create' ? 'Color creado exitosamente' : 'Color actualizado exitosamente';
+    mostrarNotificacion(successMessage, 1);
     closeColorModal();
     loadColors();
+  } else {
+    mostrarNotificacion(error.value || 'Error al procesar el color', 0);
   }
 };
 
@@ -243,9 +263,12 @@ const handleDeleteColor = async () => {
   if (colorToDelete.value) {
     const result = await deleteColor(colorToDelete.value.id);
     if (result) {
+      mostrarNotificacion('Color eliminado exitosamente', 1);
       showDeleteConfirm.value = false;
       colorToDelete.value = null;
       loadColors();
+    } else {
+      mostrarNotificacion(error.value || 'Error al eliminar el color', 0);
     }
   }
 };
