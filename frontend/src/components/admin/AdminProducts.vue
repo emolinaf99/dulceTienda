@@ -35,9 +35,9 @@ const productToDelete = ref(null);
 
 // Nuevos estados para colores y variantes
 const selectedColors = ref([]);
-const selectedSizes = ref([]);
 const colorImages = ref({}); // Objeto para almacenar imágenes por color
 const availableSizes = ref([]); // Tallas filtradas por categoría
+const colorSizeConfig = ref({}); // Configuración de tallas por color: { colorId: { sizes: [], sku: '' } }
 
 // Form data
 const productForm = ref({
@@ -76,16 +76,33 @@ const loadProducts = async () => {
 };
 
 const loadCategories = async () => {
-  const result = await getAdminCategories();
+  // Cargar todas las categorías sin paginación para el formulario
+  const result = await getAdminCategories({ limit: 1000 });
   if (result) {
     categories.value = result.data;
+    console.log('Loaded categories:', categories.value);
   }
 };
 
 const loadSizes = async () => {
   const result = await getAdminSizes();
   if (result) {
-    sizes.value = result.data;
+    // El backend devuelve TypeSizes con sizes anidadas, necesitamos aplanar
+    const flatSizes = [];
+    result.data.forEach(typeSize => {
+      if (typeSize.sizes && typeSize.sizes.length > 0) {
+        typeSize.sizes.forEach(size => {
+          flatSizes.push({
+            id: size.id,
+            name: size.name,
+            type_size_id: size.type_size_id
+          });
+        });
+      }
+    });
+    // Ordenar por ID ascendente
+    sizes.value = flatSizes.sort((a, b) => a.id - b.id);
+    console.log('Loaded and sorted sizes:', sizes.value);
   }
 };
 
@@ -144,16 +161,15 @@ const resetForm = () => {
     price: '',
     discount_percentage: 0,
     category_id: '',
-    sku: '',
     is_featured: false,
     is_active: true,
     variants: [],
     colorImages: []
   };
   selectedColors.value = [];
-  selectedSizes.value = [];
   colorImages.value = {};
   availableSizes.value = [];
+  colorSizeConfig.value = {};
 };
 
 const populateForm = (product) => {
@@ -163,17 +179,29 @@ const populateForm = (product) => {
     price: product.price || '',
     discount_percentage: product.discount_percentage || 0,
     category_id: product.category_id || '',
-    sku: product.sku || '',
     is_featured: product.is_featured || false,
     is_active: product.is_active !== false,
     variants: product.variants || [],
     colorImages: product.colorImages || []
   };
-  // Extraer colores y tallas de las variantes existentes
-  if (product.variants) {
+  
+  // Reconstruir configuración por color desde variantes existentes
+  if (product.variants && product.variants.length > 0) {
     selectedColors.value = [...new Set(product.variants.map(v => v.color_id))];
-    selectedSizes.value = [...new Set(product.variants.map(v => v.size_id))];
+    
+    // Agrupar variantes por color
+    const colorConfig = {};
+    product.variants.forEach(variant => {
+      if (!colorConfig[variant.color_id]) {
+        colorConfig[variant.color_id] = {
+          sizes: []
+        };
+      }
+      colorConfig[variant.color_id].sizes.push(variant.size_id);
+    });
+    colorSizeConfig.value = colorConfig;
   }
+  
   // Filtrar tallas por categoria al editar
   if (product.category_id) {
     filterSizesByCategory();
@@ -184,21 +212,48 @@ const handleSubmit = async () => {
   try {
     const formData = new FormData();
     
-    // Preparar variantes con stock
+    // Validar que hay colores seleccionados
+    if (selectedColors.value.length === 0) {
+      alert('Por favor selecciona al menos un color');
+      return;
+    }
+    
+    // Preparar variantes basadas en colorSizeConfig
     const variants = [];
-    selectedSizes.value.forEach(sizeId => {
-      selectedColors.value.forEach(colorId => {
-        const stockValue = document.querySelector(`#stock_${sizeId}_${colorId}`)?.value || 0;
+    let hasValidVariants = false;
+    
+    selectedColors.value.forEach(colorId => {
+      const colorConfig = colorSizeConfig.value[colorId];
+      
+      if (!colorConfig?.sizes || colorConfig.sizes.length === 0) {
+        alert(`Por favor selecciona al menos una talla para el color ${getColorName(colorId)}`);
+        return;
+      }
+      
+      colorConfig.sizes.forEach(sizeId => {
+        const stockValue = document.querySelector(`#stock_${colorId}_${sizeId}`)?.value || 0;
+        
         variants.push({
           size_id: sizeId,
           color_id: colorId,
           stock: parseInt(stockValue)
+          // SKU se genera automáticamente en el backend
         });
+        hasValidVariants = true;
       });
     });
     
+    if (!hasValidVariants) {
+      alert('Por favor configura al menos una variante válida');
+      return;
+    }
+    
+    console.log('Prepared variants:', variants);
+    
     // Preparar imágenes por color
     const colorImagesData = [];
+    console.log('ColorImages object:', colorImages.value);
+    
     selectedColors.value.forEach(colorId => {
       if (colorImages.value[colorId] && colorImages.value[colorId].length > 0) {
         colorImagesData.push({
@@ -208,14 +263,20 @@ const handleSubmit = async () => {
       }
     });
     
+    console.log('Prepared color images data:', colorImagesData);
+    
     // Add basic fields
+    console.log('Adding basic fields to FormData:');
     Object.keys(productForm.value).forEach(key => {
       if (key !== 'variants' && key !== 'colorImages') {
+        console.log(`${key}:`, productForm.value[key]);
         formData.append(key, productForm.value[key]);
       }
     });
     
     // Add variants and colorImages as JSON
+    console.log('Adding variants as JSON:', JSON.stringify(variants));
+    console.log('Adding colorImages as JSON:', JSON.stringify(colorImagesData));
     formData.append('variants', JSON.stringify(variants));
     formData.append('colorImages', JSON.stringify(colorImagesData));
     
@@ -238,9 +299,13 @@ const handleSubmit = async () => {
     if (result) {
       closeModal();
       loadProducts();
+    } else {
+      // Si hay error en la API, se mostrará automáticamente por useAdminApi
+      console.error('Failed to submit product form');
     }
   } catch (err) {
     console.error('Error submitting form:', err);
+    alert('Error al enviar el formulario: ' + err.message);
   }
 };
 
@@ -269,14 +334,28 @@ const handleDelete = async () => {
 
 // Filtrar tallas por categoría
 const filterSizesByCategory = () => {
+  console.log('Filtering sizes by category...');
+  console.log('Category ID:', productForm.value.category_id);
+  console.log('Available categories:', categories.value);
+  console.log('Available sizes:', sizes.value);
+  
   if (productForm.value.category_id) {
     const category = categories.value.find(c => c.id == productForm.value.category_id);
+    console.log('Selected category:', category);
+    
     if (category && category.type_size_id) {
-      availableSizes.value = sizes.value.filter(size => size.type_size_id === category.type_size_id);
+      console.log('Category type_size_id:', category.type_size_id);
+      // Filtrar y mantener orden ascendente por ID
+      availableSizes.value = sizes.value
+        .filter(size => size.type_size_id === category.type_size_id)
+        .sort((a, b) => a.id - b.id);
+      console.log('Filtered and sorted sizes:', availableSizes.value);
     } else {
-      availableSizes.value = sizes.value;
+      console.log('No type_size_id found, showing all sizes');
+      availableSizes.value = sizes.value.sort((a, b) => a.id - b.id);
     }
   } else {
+    console.log('No category selected');
     availableSizes.value = [];
   }
 };
@@ -284,34 +363,55 @@ const filterSizesByCategory = () => {
 // Manejar cambio de categoria
 const handleCategoryChange = () => {
   filterSizesByCategory();
-  selectedSizes.value = [];
+  // Limpiar configuración de colores ya que las tallas cambiarán
+  colorSizeConfig.value = {};
 };
 
 // Manejar upload de imágenes por color
 const handleColorImageChange = (colorId, event) => {
+  const numericColorId = parseInt(colorId);
   const files = Array.from(event.target.files);
-  colorImages.value[colorId] = files;
+  colorImages.value[numericColorId] = files;
+  console.log('Images selected for color:', numericColorId, 'Files:', files.length);
 };
 
 // Agregar o quitar color
 const toggleColor = (colorId) => {
-  const index = selectedColors.value.indexOf(colorId);
+  const numericColorId = parseInt(colorId);
+  const index = selectedColors.value.indexOf(numericColorId);
   if (index > -1) {
     selectedColors.value.splice(index, 1);
-    delete colorImages.value[colorId];
+    delete colorImages.value[numericColorId];
+    delete colorSizeConfig.value[numericColorId];
   } else {
-    selectedColors.value.push(colorId);
+    selectedColors.value.push(numericColorId);
+    // Inicializar configuración para este color
+    colorSizeConfig.value[numericColorId] = {
+      sizes: []
+    };
   }
+  console.log('Toggled color:', numericColorId, 'Selected colors:', selectedColors.value);
 };
 
-// Agregar o quitar talla
-const toggleSize = (sizeId) => {
-  const index = selectedSizes.value.indexOf(sizeId);
-  if (index > -1) {
-    selectedSizes.value.splice(index, 1);
-  } else {
-    selectedSizes.value.push(sizeId);
+// Agregar o quitar talla para un color específico
+const toggleSizeForColor = (colorId, sizeId) => {
+  const numericColorId = parseInt(colorId);
+  const numericSizeId = parseInt(sizeId);
+  
+  if (!colorSizeConfig.value[numericColorId]) {
+    colorSizeConfig.value[numericColorId] = { sizes: [] };
   }
+  
+  const sizes = colorSizeConfig.value[numericColorId].sizes;
+  const index = sizes.indexOf(numericSizeId);
+  
+  if (index > -1) {
+    sizes.splice(index, 1);
+  } else {
+    sizes.push(numericSizeId);
+  }
+  
+  console.log(`Toggled size ${numericSizeId} for color ${numericColorId}:`, colorSizeConfig.value[numericColorId]);
 };
 
 // Obtener nombre del color
@@ -595,10 +695,6 @@ onMounted(() => {
             </div>
           </div>
 
-          <div class="adminFormGroup">
-            <label>SKU</label>
-            <input v-model="productForm.sku" type="text" />
-          </div>
 
           <div class="adminFormGroup">
             <label>Categoría *</label>
@@ -610,9 +706,9 @@ onMounted(() => {
             </select>
           </div>
 
-          <!-- Colores Disponibles -->
+          <!-- Configuración por Color -->
           <div class="adminFormGroup" v-if="colors.length > 0">
-            <label>Colores Disponibles *</label>
+            <label>Configuración por Color *</label>
             <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
               <label 
                 v-for="color in colors" 
@@ -640,98 +736,81 @@ onMounted(() => {
             </small>
           </div>
 
-          <!-- Tallas Disponibles -->
-          <div class="adminFormGroup" v-if="availableSizes.length > 0">
-            <label>Tallas Disponibles *</label>
-            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
-              <label 
-                v-for="size in availableSizes" 
-                :key="size.id" 
-                style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9;"
-                :style="{ 
-                  background: selectedSizes.includes(size.id) ? '#e8f5e8' : '#f9f9f9',
-                  borderColor: selectedSizes.includes(size.id) ? '#4caf50' : '#ddd'
-                }"
-              >
-                <input 
-                  type="checkbox" 
-                  :checked="selectedSizes.includes(size.id)"
-                  @change="toggleSize(size.id)"
-                />
-                {{ size.name }}
-              </label>
-            </div>
-            <small style="color: #666; display: block; margin-top: 0.5rem;">
-              Las tallas se filtran según el tipo de talla de la categoría seleccionada
-            </small>
-          </div>
+          <!-- Configuración Detallada por Color -->
+          <div v-if="selectedColors.length > 0" style="margin-top: 1.5rem;">
+            <div 
+              v-for="colorId in selectedColors" 
+              :key="colorId"
+              style="border: 2px solid #e0e0e0; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; background: #fafafa;"
+            >
+              <!-- Encabezado del Color -->
+              <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid #ddd;">
+                <div 
+                  style="width: 30px; height: 30px; border-radius: 50%; border: 2px solid #ccc;"
+                  :style="{ backgroundColor: colors.find(c => c.id === colorId)?.hex_code || '#ccc' }"
+                ></div>
+                <h4 style="margin: 0; color: #333;">Configuración para {{ getColorName(colorId) }}</h4>
+              </div>
 
-          <!-- Stock por Variante -->
-          <div class="adminFormGroup" v-if="selectedSizes.length > 0 && selectedColors.length > 0">
-            <label>Stock por Variante (Talla x Color)</label>
-            <div style="overflow-x: auto; margin-top: 0.5rem;">
-              <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
-                <thead>
-                  <tr style="background: #f5f5f5;">
-                    <th style="border: 1px solid #ddd; padding: 0.5rem; text-align: left;">Talla / Color</th>
-                    <th 
-                      v-for="colorId in selectedColors" 
-                      :key="colorId" 
-                      style="border: 1px solid #ddd; padding: 0.5rem; text-align: center; min-width: 80px;"
-                    >
-                      {{ getColorName(colorId) }}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="sizeId in selectedSizes" :key="sizeId">
-                    <td style="border: 1px solid #ddd; padding: 0.5rem; font-weight: 500;">
-                      {{ getSizeName(sizeId) }}
-                    </td>
-                    <td 
-                      v-for="colorId in selectedColors" 
-                      :key="`${sizeId}-${colorId}`" 
-                      style="border: 1px solid #ddd; padding: 0.25rem; text-align: center;"
-                    >
-                      <input 
-                        :id="`stock_${sizeId}_${colorId}`"
-                        type="number" 
-                        min="0" 
-                        placeholder="0"
-                        style="width: 60px; padding: 0.25rem; border: 1px solid #ccc; border-radius: 3px; text-align: center;"
-                      />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <small style="color: #666; display: block; margin-top: 0.5rem;">
-              Ingresa el stock disponible para cada combinación de talla y color
-            </small>
-          </div>
 
-          <!-- Imágenes por Color -->
-          <div class="adminFormGroup" v-if="selectedColors.length > 0">
-            <label>Imágenes por Color</label>
-            <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 0.5rem;">
-              <div 
-                v-for="colorId in selectedColors" 
-                :key="colorId" 
-                style="border: 1px solid #ddd; border-radius: 4px; padding: 1rem; background: #f9f9f9;"
-              >
-                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                  <div 
-                    style="width: 20px; height: 20px; border-radius: 50%; border: 1px solid #ccc;"
-                    :style="{ backgroundColor: colors.find(c => c.id === colorId)?.hex_code || '#ccc' }"
-                  ></div>
-                  <strong>{{ getColorName(colorId) }}</strong>
+              <!-- Tallas disponibles para este color -->
+              <div class="adminFormGroup" v-if="availableSizes.length > 0" style="margin-bottom: 1rem;">
+                <label>Tallas Disponibles para {{ getColorName(colorId) }} *</label>
+                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
+                  <label 
+                    v-for="size in availableSizes" 
+                    :key="`${colorId}-${size.id}`" 
+                    style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; background: white;"
+                    :style="{ 
+                      background: colorSizeConfig[colorId]?.sizes?.includes(size.id) ? '#e8f5e8' : 'white',
+                      borderColor: colorSizeConfig[colorId]?.sizes?.includes(size.id) ? '#4caf50' : '#ddd'
+                    }"
+                  >
+                    <input 
+                      type="checkbox" 
+                      :checked="colorSizeConfig[colorId]?.sizes?.includes(size.id) || false"
+                      @change="toggleSizeForColor(colorId, size.id)"
+                    />
+                    {{ size.name }}
+                  </label>
                 </div>
+                <small style="color: #666; display: block; margin-top: 0.5rem;">
+                  Selecciona las tallas disponibles para este color específico
+                </small>
+              </div>
+
+              <!-- Stock por talla para este color -->
+              <div v-if="colorSizeConfig[colorId]?.sizes?.length > 0" class="adminFormGroup" style="margin-bottom: 1rem;">
+                <label>Stock por Talla para {{ getColorName(colorId) }}</label>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; margin-top: 0.5rem;">
+                  <div 
+                    v-for="sizeId in colorSizeConfig[colorId].sizes" 
+                    :key="`stock-${colorId}-${sizeId}`"
+                    style="border: 1px solid #ddd; border-radius: 4px; padding: 0.75rem; background: white;"
+                  >
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">
+                      {{ getSizeName(sizeId) }}
+                    </label>
+                    <input 
+                      :id="`stock_${colorId}_${sizeId}`"
+                      type="number" 
+                      min="0" 
+                      placeholder="0"
+                      style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 3px;"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Imágenes para este color -->
+              <div class="adminFormGroup">
+                <label>Imágenes para {{ getColorName(colorId) }} *</label>
                 <input 
                   @change="handleColorImageChange(colorId, $event)" 
                   type="file" 
                   multiple 
                   accept="image/*"
-                  style="width: 100%;"
+                  style="width: 100%; margin-top: 0.5rem;"
                 />
                 <small style="color: #666; display: block; margin-top: 0.25rem;">
                   Selecciona las imágenes para el color {{ getColorName(colorId) }} (JPG, PNG, WebP - máx. 5MB cada una)

@@ -525,3 +525,112 @@ export const createTypeSize = async (req, res) => {
     });
   }
 };
+
+// Update type size
+export const updateTypeSize = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { description } = req.body;
+
+    if (!description) {
+      return res.status(400).json({
+        success: false,
+        message: 'La descripción del tipo de talla es requerida'
+      });
+    }
+
+    const typeSize = await TypeSize.findByPk(id);
+    if (!typeSize) {
+      return res.status(404).json({
+        success: false,
+        message: 'Tipo de talla no encontrado'
+      });
+    }
+
+    await typeSize.update({
+      description: description.trim()
+    });
+
+    res.json({
+      success: true,
+      message: 'Tipo de talla actualizado correctamente',
+      data: typeSize
+    });
+  } catch (error) {
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Ya existe un tipo de talla con esa descripción'
+      });
+    }
+    console.error('Error updating type size:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al actualizar tipo de talla'
+    });
+  }
+};
+
+// Update size
+export const updateSize = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, type_size_id } = req.body;
+
+    if (!name || !type_size_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'El nombre y tipo de talla son requeridos'
+      });
+    }
+
+    const size = await Size.findByPk(id);
+    if (!size) {
+      return res.status(404).json({
+        success: false,
+        message: 'Talla no encontrada'
+      });
+    }
+
+    // Verificar que el tipo de talla existe
+    const typeSize = await TypeSize.findByPk(type_size_id);
+    if (!typeSize) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tipo de talla no válido'
+      });
+    }
+
+    await size.update({
+      name: name.trim(),
+      type_size_id
+    });
+
+    // Cargar la talla actualizada con su tipo
+    const updatedSize = await Size.findByPk(id, {
+      include: [{
+        model: TypeSize,
+        as: 'typeSize',
+        attributes: ['id', 'description']
+      }]
+    });
+
+    res.json({
+      success: true,
+      message: 'Talla actualizada correctamente',
+      data: updatedSize
+    });
+  } catch (error) {
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Ya existe una talla con ese nombre en este tipo'
+      });
+    }
+    console.error('Error updating size:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al actualizar talla'
+    });
+  }
+};

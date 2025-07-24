@@ -11,7 +11,9 @@ import {
   toggleCategoryStatus,
   toggleUserStatus,
   deleteCategory,
-  createTypeSize
+  createTypeSize,
+  updateTypeSize,
+  updateSize
 } from '../controllers/adminController.js';
 import { adminOnly } from '../middleware/adminAuth.js';
 
@@ -38,8 +40,10 @@ router.patch('/users/:id/toggle-status', toggleUserStatus);
 
 // Sizes, type sizes and colors
 router.get('/sizes', getAdminSizes);
+router.put('/sizes/:id', updateSize);
 router.get('/type-sizes', getAdminTypeSizes);
 router.post('/type-sizes', createTypeSize);
+router.put('/type-sizes/:id', updateTypeSize);
 router.get('/colors', getAdminColors);
 
 export default router;

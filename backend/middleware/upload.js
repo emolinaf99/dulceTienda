@@ -32,9 +32,9 @@ export const uploadProductImages = multer({
   fileFilter,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB
-    files: 4 // máximo 4 archivos
+    files: 20 // máximo 20 archivos (para múltiples colores)
   }
-}).array('images', 4);
+}).array('images', 20);
 
 export const handleMulterError = (error, req, res, next) => {
   if (error instanceof multer.MulterError) {

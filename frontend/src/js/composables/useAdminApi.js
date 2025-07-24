@@ -1,6 +1,16 @@
 import { ref } from 'vue';
 import { useApi } from './useFetch.js';
 
+// Cache simple para evitar peticiones repetitivas
+const cache = {
+  colors: null,
+  sizes: null,
+  typeSizes: null,
+  categories: null,
+  cacheTime: {},
+  CACHE_DURATION: 5 * 60 * 1000 // 5 minutos
+};
+
 // Composable para operaciones admin
 export function useAdminApi() {
   const loading = ref(false);
@@ -8,6 +18,18 @@ export function useAdminApi() {
 
   const clearError = () => {
     error.value = null;
+  };
+
+  const clearCache = (key) => {
+    if (cache[key]) {
+      cache[key] = null;
+      delete cache.cacheTime[key];
+    }
+  };
+
+  const isCacheValid = (key) => {
+    if (!cache[key] || !cache.cacheTime[key]) return false;
+    return Date.now() - cache.cacheTime[key] < cache.CACHE_DURATION;
   };
 
   // Dashboard
@@ -148,6 +170,11 @@ export function useAdminApi() {
 
   // Sizes and Colors
   const getAdminSizes = async () => {
+    // Verificar cache primero
+    if (isCacheValid('sizes')) {
+      return cache.sizes;
+    }
+
     loading.value = true;
     clearError();
     try {
@@ -156,6 +183,11 @@ export function useAdminApi() {
         error.value = 'Error al obtener tallas';
         return null;
       }
+      
+      // Guardar en cache
+      cache.sizes = data.value;
+      cache.cacheTime.sizes = Date.now();
+      
       return data.value;
     } catch (err) {
       error.value = 'Error de conexión';
@@ -166,6 +198,11 @@ export function useAdminApi() {
   };
 
   const getAdminTypeSizes = async () => {
+    // Verificar cache primero
+    if (isCacheValid('typeSizes')) {
+      return cache.typeSizes;
+    }
+
     loading.value = true;
     clearError();
     try {
@@ -174,6 +211,11 @@ export function useAdminApi() {
         error.value = 'Error al obtener tipos de talla';
         return null;
       }
+      
+      // Guardar en cache
+      cache.typeSizes = data.value;
+      cache.cacheTime.typeSizes = Date.now();
+      
       return data.value;
     } catch (err) {
       error.value = 'Error de conexión';
@@ -184,6 +226,11 @@ export function useAdminApi() {
   };
 
   const getAdminColors = async () => {
+    // Verificar cache primero
+    if (isCacheValid('colors')) {
+      return cache.colors;
+    }
+
     loading.value = true;
     clearError();
     try {
@@ -192,6 +239,11 @@ export function useAdminApi() {
         error.value = 'Error al obtener colores';
         return null;
       }
+      
+      // Guardar en cache
+      cache.colors = data.value;
+      cache.cacheTime.colors = Date.now();
+      
       return data.value;
     } catch (err) {
       error.value = 'Error de conexión';
@@ -208,12 +260,15 @@ export function useAdminApi() {
     try {
       const { data, error: apiError } = await useApi('/api/products', 'POST', productData);
       if (apiError.value) {
-        error.value = 'Error al crear producto';
+        // Usar el mensaje específico del backend si está disponible
+        error.value = apiError.value.message || 'Error al crear producto';
+        console.error('Product creation error:', apiError.value);
         return null;
       }
       return data.value;
     } catch (err) {
       error.value = 'Error de conexión';
+      console.error('Connection error:', err);
       return null;
     } finally {
       loading.value = false;
@@ -346,6 +401,52 @@ export function useAdminApi() {
     }
   };
 
+  const updateTypeSize = async (typeSizeId, typeSizeData) => {
+    loading.value = true;
+    clearError();
+    try {
+      const { data, error: apiError } = await useApi(`/api/type-sizes/${typeSizeId}`, 'PUT', typeSizeData);
+      if (apiError.value) {
+        error.value = 'Error al actualizar tipo de talla';
+        return null;
+      }
+      
+      // Limpiar cache relacionado después de actualizar
+      clearCache('typeSizes');
+      clearCache('sizes');
+      
+      return data.value;
+    } catch (err) {
+      error.value = 'Error de conexión';
+      return null;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const updateSize = async (sizeId, sizeData) => {
+    loading.value = true;
+    clearError();
+    try {
+      const { data, error: apiError } = await useApi(`/api/sizes/${sizeId}`, 'PUT', sizeData);
+      if (apiError.value) {
+        error.value = 'Error al actualizar talla';
+        return null;
+      }
+      
+      // Limpiar cache relacionado después de actualizar
+      clearCache('sizes');
+      clearCache('typeSizes');
+      
+      return data.value;
+    } catch (err) {
+      error.value = 'Error de conexión';
+      return null;
+    } finally {
+      loading.value = false;
+    }
+  };
+
   const createColor = async (colorData) => {
     loading.value = true;
     clearError();
@@ -404,6 +505,7 @@ export function useAdminApi() {
     loading,
     error,
     clearError,
+    clearCache,
     // Dashboard
     getDashboardStats,
     // Products
@@ -426,7 +528,9 @@ export function useAdminApi() {
     getAdminTypeSizes,
     getAdminColors,
     createSize,
+    updateSize,
     createTypeSize,
+    updateTypeSize,
     createColor,
     updateColor,
     deleteColor

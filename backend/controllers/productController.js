@@ -172,7 +172,7 @@ export const getProductById = async (req, res) => {
 
     res.json({
       success: true,
-      data: { product: productData }
+      data: productData
     });
   } catch (error) {
     console.error('Error obteniendo producto:', error);
@@ -205,7 +205,41 @@ export const createProduct = async (req, res) => {
       is_featured = false
     } = req.body;
 
+    console.log('=== PRODUCT CREATION DEBUG ===');
+    console.log('Request body:', req.body);
+    console.log('Received product data:', {
+      name, description, price, category_id, variants, colorImages
+    });
+    console.log('Files received:', req.files?.length || 0);
+    console.log('Request headers:', req.headers['content-type']);
+
+    // Validar campos requeridos
+    if (!name) {
+      console.log('ERROR: Missing name');
+      return res.status(400).json({
+        success: false,
+        message: 'El nombre del producto es requerido'
+      });
+    }
+
+    if (!price) {
+      console.log('ERROR: Missing price');
+      return res.status(400).json({
+        success: false,
+        message: 'El precio del producto es requerido'
+      });
+    }
+
+    if (!category_id) {
+      console.log('ERROR: Missing category_id');
+      return res.status(400).json({
+        success: false,
+        message: 'La categoría del producto es requerida'
+      });
+    }
+
     if (!req.files || req.files.length === 0) {
+      console.log('ERROR: No files uploaded');
       return res.status(400).json({
         success: false,
         message: 'Se requiere al menos una imagen'
@@ -222,36 +256,68 @@ export const createProduct = async (req, res) => {
       is_featured
     });
 
-    // Crear variantes de producto
+    // Crear variantes de producto con SKU automático
     if (variants && variants.length > 0) {
-      const variantData = JSON.parse(variants).map(variant => ({
+      console.log('Processing variants:', variants);
+      const parsedVariants = JSON.parse(variants);
+      console.log('Parsed variants:', parsedVariants);
+      
+      const variantData = parsedVariants.map(variant => ({
         product_id: product.id,
         size_id: variant.size_id,
         color_id: variant.color_id,
-        stock: variant.stock || 0
+        stock: variant.stock || 0,
+        sku: `${product.id}-${variant.size_id}-${variant.color_id}` // SKU automático
       }));
       
+      console.log('Variant data to create:', variantData);
       await ProductVariant.bulkCreate(variantData);
+      console.log('Variants created successfully');
+    } else {
+      console.log('No variants to create');
     }
 
     // Crear imágenes por color
-    if (colorImages && req.files) {
+    if (colorImages && req.files && req.files.length > 0) {
+      console.log('Processing color images:', colorImages);
       const colorImageData = JSON.parse(colorImages);
+      console.log('Parsed color images:', colorImageData);
+      console.log('Available files:', req.files.map(f => f.filename));
+      
       const imagePromises = [];
+      let fileIndex = 0;
 
-      colorImageData.forEach((colorImg, index) => {
-        if (req.files[index]) {
-          imagePromises.push(
-            ImgColorProduct.create({
+      // Procesar imágenes por color
+      colorImageData.forEach((colorImg) => {
+        console.log('Processing color:', colorImg.color_id);
+        // Cada color puede tener múltiples imágenes
+        const numberOfImagesForColor = colorImg.images ? colorImg.images.length : 0;
+        console.log('Number of images for this color:', numberOfImagesForColor);
+        
+        for (let i = 0; i < numberOfImagesForColor && fileIndex < req.files.length; i++) {
+          if (req.files[fileIndex]) {
+            console.log('Creating image record:', {
               product_id: product.id,
               color_id: colorImg.color_id,
-              img: req.files[index].filename
-            })
-          );
+              img: req.files[fileIndex].filename
+            });
+            
+            imagePromises.push(
+              ImgColorProduct.create({
+                product_id: product.id,
+                color_id: colorImg.color_id,
+                img: req.files[fileIndex].filename
+              })
+            );
+            fileIndex++;
+          }
         }
       });
 
       await Promise.all(imagePromises);
+      console.log('Images created successfully');
+    } else {
+      console.log('No color images to create');
     }
 
     // Obtener producto completo con todas las relaciones

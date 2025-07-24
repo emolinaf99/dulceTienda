@@ -7,10 +7,13 @@ const {
   getAdminTypeSizes,
   getAdminColors,
   createSize,
+  updateSize,
   createTypeSize,
+  updateTypeSize,
   createColor,
   updateColor,
   deleteColor,
+  clearCache,
   loading,
   error
 } = useAdminApi();
@@ -25,6 +28,10 @@ const showColorModal = ref(false);
 const showDeleteConfirm = ref(false);
 const colorToDelete = ref(null);
 const colorModalMode = ref('create'); // create, edit
+const typeSizeModalMode = ref('create'); // create, edit
+const sizeModalMode = ref('create'); // create, edit
+const selectedTypeSize = ref(null);
+const selectedSize = ref(null);
 
 // Form data
 const sizeForm = ref({
@@ -65,13 +72,25 @@ const loadColors = async () => {
   }
 };
 
-const openSizeModal = () => {
-  resetSizeForm();
+const openSizeModal = (mode = 'create', size = null) => {
+  sizeModalMode.value = mode;
+  selectedSize.value = size;
+  
+  if (mode === 'edit' && size) {
+    sizeForm.value = {
+      name: size.name || '',
+      type_size_id: size.type_size_id || ''
+    };
+  } else {
+    resetSizeForm();
+  }
+  
   showSizeModal.value = true;
 };
 
 const closeSizeModal = () => {
   showSizeModal.value = false;
+  selectedSize.value = null;
   resetSizeForm();
 };
 
@@ -82,13 +101,24 @@ const resetSizeForm = () => {
   };
 };
 
-const openTypeSizeModal = () => {
-  resetTypeSizeForm();
+const openTypeSizeModal = (mode = 'create', typeSize = null) => {
+  typeSizeModalMode.value = mode;
+  selectedTypeSize.value = typeSize;
+  
+  if (mode === 'edit' && typeSize) {
+    typeSizeForm.value = {
+      description: typeSize.description || ''
+    };
+  } else {
+    resetTypeSizeForm();
+  }
+  
   showTypeSizeModal.value = true;
 };
 
 const closeTypeSizeModal = () => {
   showTypeSizeModal.value = false;
+  selectedTypeSize.value = null;
   resetTypeSizeForm();
 };
 
@@ -99,20 +129,65 @@ const resetTypeSizeForm = () => {
 };
 
 const handleSizeSubmit = async () => {
-  const result = await createSize(sizeForm.value);
+  let result;
+  
+  if (sizeModalMode.value === 'create') {
+    result = await createSize(sizeForm.value);
+  } else if (sizeModalMode.value === 'edit') {
+    result = await updateSize(selectedSize.value.id, sizeForm.value);
+  }
+  
   if (result) {
+    // Limpiar cache para asegurar datos frescos
+    clearCache('sizes');
+    clearCache('typeSizes');
+    
     closeSizeModal();
-    loadSizes();
+    // Recargar datos para mostrar los cambios
+    await loadSizes();
+    await loadTypeSizes();
   }
 };
 
 const handleTypeSizeSubmit = async () => {
-  const result = await createTypeSize(typeSizeForm.value);
-  if (result) {
-    closeTypeSizeModal();
-    loadSizes();
-    loadTypeSizes();
+  console.log('=== HANDLE TYPE SIZE SUBMIT START ===');
+  console.log('Mode:', typeSizeModalMode.value);
+  console.log('Selected TypeSize:', selectedTypeSize.value);
+  console.log('Form data:', typeSizeForm.value);
+  
+  let result;
+  
+  if (typeSizeModalMode.value === 'create') {
+    console.log('Creating new type size...');
+    result = await createTypeSize(typeSizeForm.value);
+  } else if (typeSizeModalMode.value === 'edit') {
+    console.log('Updating type size with ID:', selectedTypeSize.value?.id);
+    result = await updateTypeSize(selectedTypeSize.value.id, typeSizeForm.value);
   }
+  
+  console.log('API result:', result);
+  
+  if (result) {
+    console.log('Type size operation successful, clearing cache and reloading data...');
+    
+    // Limpiar cache manualmente para asegurar datos frescos
+    clearCache('typeSizes');
+    clearCache('sizes');
+    
+    console.log('Cache cleared, closing modal...');
+    closeTypeSizeModal();
+    
+    console.log('Modal closed, reloading data...');
+    // Recargar datos de forma secuencial para asegurar la actualización
+    await loadTypeSizes();
+    await loadSizes();
+    console.log('Data reloaded successfully');
+  } else {
+    console.error('Type size operation failed');
+    alert('Error al procesar la operación. Revisa la consola para más detalles.');
+  }
+  
+  console.log('=== HANDLE TYPE SIZE SUBMIT END ===');
 };
 
 const openColorModal = (mode = 'create', color = null) => {
@@ -218,13 +293,24 @@ onMounted(() => {
         <div
           v-for="typeSize in typeSizes"
           :key="typeSize.id"
-          style="background: #f8f9fa; padding: 1rem; border-radius: 8px; border: 1px solid #e0e0e0;"
+          style="background: #f8f9fa; padding: 1rem; border-radius: 8px; border: 1px solid #e0e0e0; position: relative;"
         >
           <div style="font-size: 1.1rem; font-weight: bold; margin-bottom: 0.5rem; color: #333;">
             {{ typeSize.description }}
           </div>
-          <div style="font-size: 0.8rem; color: #999;">
+          <div style="font-size: 0.8rem; color: #999; margin-bottom: 1rem;">
             ID: {{ typeSize.id }}
+          </div>
+          
+          <!-- Botones de acción -->
+          <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+            <button 
+              @click="openTypeSizeModal('edit', typeSize)"
+              class="adminBtn adminBtnWarning adminBtnSmall"
+              title="Editar tipo de talla"
+            >
+              <i class="fas fa-edit"></i>
+            </button>
           </div>
         </div>
       </div>
@@ -280,13 +366,25 @@ onMounted(() => {
               <div
                 v-for="size in typeSize.sizes"
                 :key="size.id"
-                style="background: #f8f9fa; padding: 1rem; border-radius: 6px; text-align: center; border: 1px solid #e0e0e0; transition: transform 0.2s ease;"
+                style="background: #f8f9fa; padding: 1rem; border-radius: 6px; text-align: center; border: 1px solid #e0e0e0; transition: transform 0.2s ease; position: relative;"
               >
                 <div style="font-size: 1.3rem; font-weight: bold; margin-bottom: 0.5rem; color: #333;">
                   {{ size.name }}
                 </div>
-                <div style="font-size: 0.7rem; color: #999;">
+                <div style="font-size: 0.7rem; color: #999; margin-bottom: 0.75rem;">
                   ID: {{ size.id }}
+                </div>
+                
+                <!-- Botón de editar -->
+                <div style="display: flex; justify-content: center;">
+                  <button 
+                    @click="openSizeModal('edit', size)"
+                    class="adminBtn adminBtnWarning adminBtnSmall"
+                    title="Editar talla"
+                    style="font-size: 0.7rem; padding: 0.25rem 0.5rem;"
+                  >
+                    <i class="fas fa-edit"></i>
+                  </button>
                 </div>
               </div>
             </div>
@@ -465,8 +563,8 @@ onMounted(() => {
       <div class="adminModalContent">
         <div class="adminModalHeader">
           <h3>
-            <i class="fas fa-plus"></i>
-            Nuevo Tipo de Talla
+            <i class="fas" :class="typeSizeModalMode === 'create' ? 'fa-plus' : 'fa-edit'"></i>
+            {{ typeSizeModalMode === 'create' ? 'Nuevo Tipo de Talla' : 'Editar Tipo de Talla' }}
           </h3>
           <button @click="closeTypeSizeModal" class="adminCloseBtn">
             <i class="fas fa-times"></i>
@@ -488,8 +586,9 @@ onMounted(() => {
               Cancelar
             </button>
             <button type="submit" class="adminBtn adminBtnPrimary" :disabled="loading">
-              <i class="fas fa-plus"></i>
-              {{ loading ? 'Creando...' : 'Crear Tipo' }}
+              <i class="fas" :class="typeSizeModalMode === 'create' ? 'fa-plus' : 'fa-save'"></i>
+              {{ loading ? (typeSizeModalMode === 'create' ? 'Creando...' : 'Actualizando...') : 
+                 (typeSizeModalMode === 'create' ? 'Crear Tipo' : 'Actualizar Tipo') }}
             </button>
           </div>
         </form>
@@ -501,8 +600,8 @@ onMounted(() => {
       <div class="adminModalContent">
         <div class="adminModalHeader">
           <h3>
-            <i class="fas fa-plus"></i>
-            Nueva Talla
+            <i class="fas" :class="sizeModalMode === 'create' ? 'fa-plus' : 'fa-edit'"></i>
+            {{ sizeModalMode === 'create' ? 'Nueva Talla' : 'Editar Talla' }}
           </h3>
           <button @click="closeSizeModal" class="adminCloseBtn">
             <i class="fas fa-times"></i>
@@ -537,8 +636,9 @@ onMounted(() => {
               Cancelar
             </button>
             <button type="submit" class="adminBtn adminBtnPrimary" :disabled="loading || typeSizes.length === 0">
-              <i class="fas fa-plus"></i>
-              {{ loading ? 'Creando...' : 'Crear Talla' }}
+              <i class="fas" :class="sizeModalMode === 'create' ? 'fa-plus' : 'fa-save'"></i>
+              {{ loading ? (sizeModalMode === 'create' ? 'Creando...' : 'Actualizando...') : 
+                 (sizeModalMode === 'create' ? 'Crear Talla' : 'Actualizar Talla') }}
             </button>
           </div>
         </form>

@@ -14,7 +14,7 @@ export const authRateLimit = rateLimit({
 
 export const generalRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // máximo 100 requests por IP
+  max: 500, // máximo 500 requests por IP (aumentado para desarrollo)
   message: {
     success: false,
     message: 'Demasiadas solicitudes desde esta IP. Intenta de nuevo más tarde.'
@@ -25,7 +25,7 @@ export const generalRateLimit = rateLimit({
 
 export const apiRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 200, // máximo 200 requests de API por IP
+  max: 1000, // máximo 1000 requests de API por IP (aumentado para desarrollo)
   message: {
     success: false,
     message: 'Límite de API excedido. Intenta de nuevo más tarde.'
