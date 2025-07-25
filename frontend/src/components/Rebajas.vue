@@ -4,6 +4,7 @@
     import { RouterLink, RouterView, useRoute} from 'vue-router'
     import {scrollearConClick} from '/src/js/scrollWithClick'
     import { useApi } from '/src/js/composables/useFetch.js'
+    import { checkOverflow } from '/src/js/overflow.js'
     
     const products = ref([])
     const loading = ref(true)
@@ -65,6 +66,9 @@
                 scrollearConClick(contenedorScrollRebajas,itemIntoScroll,1)
             })
         }
+
+        checkOverflow(contenedorScrollRebajas, scrollIzquierdaRebajas, scrollDerechaRebajas)
+        window.addEventListener('resize', () => checkOverflow(contenedorScrollRebajas, scrollIzquierdaRebajas, scrollDerechaRebajas))
     })
 </script>
 
@@ -93,7 +97,7 @@
                             <div class="priceItem">
                                 <span v-if="product.discount_percentage > 0" class="original-price">{{ formatPrice(product.price) }}</span>
                                 <span class="discounted-price">{{ formatPrice(getDiscountedPrice(product)) }}</span>
-                                <span v-if="product.discount_percentage > 0" class="discount-badge">-{{ product.discount_percentage }}%</span>
+                                <span v-if="product.discount_percentage > 0" class="discount-badge">-{{ Math.floor(product.discount_percentage) }}%</span>
                             </div>
                         </div>
                     </RouterLink>

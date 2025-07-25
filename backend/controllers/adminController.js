@@ -10,11 +10,10 @@ export const getDashboardStats = async (req, res) => {
     console.log('Debug Dashboard - Total categories in DB:', totalCategories);
     const totalUsers = await User.count({ where: { is_active: true, role: ['cliente', 'mayorista'] } });
     
-    // Recent products (last 7 days)
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const recentProducts = await Product.count({
+      order: [['created_at', 'DESC']],
+      limit: 10,
       where: {
-        created_at: { [Op.gte]: sevenDaysAgo },
         is_active: true
       }
     });

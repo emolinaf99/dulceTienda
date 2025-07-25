@@ -4,6 +4,7 @@
   import { RouterLink, RouterView, useRoute} from 'vue-router'
   import {scrollearConClick} from '/src/js/scrollWithClick'
   import { useCategories } from '../js/composables/useCategories.js';
+  import { checkOverflow } from '/src/js/overflow.js'
 
   // Usar el composable de categorías
   const { categories, loading, error } = useCategories();
@@ -22,6 +23,9 @@
     scrollIzquierdaCategorias.addEventListener('click',() => {
       scrollearConClick(contenedorScroll,itemIntoScroll,1)
     })
+
+    checkOverflow(contenedorScroll, scrollIzquierdaCategorias, scrollDerechaCategorias)
+    window.addEventListener('resize', () => checkOverflow(contenedorScroll, scrollIzquierdaCategorias, scrollDerechaCategorias))
   })
 
 </script>

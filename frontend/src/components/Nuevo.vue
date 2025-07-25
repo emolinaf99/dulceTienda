@@ -4,6 +4,7 @@
     import { RouterLink, RouterView, useRoute} from 'vue-router'
     import {scrollearConClick} from '/src/js/scrollWithClick'
     import { useApi } from '/src/js/composables/useFetch.js'
+    import { checkOverflow } from '/src/js/overflow.js'
 
     const route = useRoute()
     const titulo = route.name === 'ProductDetail' ? 'TAMBIÉN TE PUEDE INTERESAR' : 'LO NUEVO'
@@ -35,6 +36,14 @@
         }).format(price)
     }
 
+    const getDiscountedPrice = (product) => {
+        if (product.discount_percentage > 0) {
+            const discountedPrice = product.price - (product.price * product.discount_percentage / 100)
+            return discountedPrice
+        }
+        return product.price
+    }
+
     const getMainImage = (product) => {
         if (product.colorImages && product.colorImages.length > 0) {
             return `/uploads/products/${product.colorImages[0].img}`
@@ -60,6 +69,9 @@
                 scrollearConClick(contenedorScrollNuevos,itemIntoScroll,1)
             })
         }
+
+        checkOverflow(contenedorScrollNuevos, scrollIzquierdaNuevo, scrollDerechaNuevo)
+        window.addEventListener('resize', () => checkOverflow(contenedorScrollNuevos, scrollIzquierdaNuevo, scrollDerechaNuevo))
     })
 </script>
 
@@ -84,7 +96,11 @@
                         <img :src="getMainImage(product)" :alt="product.name">
                         <div class="itemData">
                             <div class="nameItem">{{ product.name }}</div>
-                            <div class="priceItem">{{ formatPrice(product.price) }}</div>
+                            <div class="priceItem">
+                                <span v-if="product.discount_percentage > 0" class="original-price">{{ formatPrice(product.price) }}</span>
+                                <span class="discounted-price">{{ formatPrice(getDiscountedPrice(product)) }}</span>
+                                <span v-if="product.discount_percentage > 0" class="discount-badge">-{{ Math.floor(product.discount_percentage) }}%</span>
+                            </div>
                         </div>
                     </RouterLink>
                 </template>

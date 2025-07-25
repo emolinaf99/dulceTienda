@@ -82,7 +82,7 @@ onMounted(() => {
           <h3 style="color: #ffc107;">{{ stats.recentProducts }}</h3>
           <p>
             <i class="fas fa-plus" style="margin-right: 0.5rem;"></i>
-            Productos Nuevos (7 días)
+            Productos Nuevos (Últimos 10)
           </p>
         </div>
 

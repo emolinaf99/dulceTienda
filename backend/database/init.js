@@ -41,8 +41,8 @@ const createDefaultTypeSizes = async () => {
     
     if (typeSizesCount === 0) {
       const defaultTypeSizes = [
-        { description: 'PRENDAS SUPERIORES' },
-        { description: 'PRENDAS INFERIORES' }
+        { description: 'Tallaje por letras' },
+        { description: 'Tallaje para pantalones' }
       ];
 
       await TypeSize.bulkCreate(defaultTypeSizes);

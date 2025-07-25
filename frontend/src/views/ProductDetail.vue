@@ -1,7 +1,8 @@
 <script setup>
-    import { ref, onMounted, computed, nextTick } from 'vue'
+    import { ref, onMounted, computed, nextTick, watch } from 'vue'
     import Nuevo from '../components/Nuevo.vue'
     import { useProducts } from '../js/composables/useProducts.js'
+    import { checkOverflow } from '../js/overflow.js'
 
     const props = defineProps({
         id: String
@@ -166,6 +167,25 @@
 
     onMounted(async () => {
         await loadProduct();
+
+        nextTick(() => {
+            const mainImageContainer = mainImageContainerRef.value;
+            const leftButton = document.querySelector('.scrollIzquierdaDetalle');
+            const rightButton = document.querySelector('.scrollDerechaDetalle');
+
+            checkOverflow(mainImageContainer, leftButton, rightButton);
+            window.addEventListener('resize', () => checkOverflow(mainImageContainer, leftButton, rightButton));
+        });
+    });
+
+    watch(currentImages, () => {
+        nextTick(() => {
+            const mainImageContainer = mainImageContainerRef.value;
+            const leftButton = document.querySelector('.scrollIzquierdaDetalle');
+            const rightButton = document.querySelector('.scrollDerechaDetalle');
+
+            checkOverflow(mainImageContainer, leftButton, rightButton);
+        });
     });
 
 </script>
@@ -184,6 +204,7 @@
 
         <!-- Product Content -->
         <div v-else-if="product && product.name" class="contenedorDetalleProducto">
+           
             <div class="contenedorImagenesMini" ref="thumbnailContainerRef">
                 <img 
                     v-for="(image, index) in currentImages" 
@@ -216,6 +237,7 @@
                     </div>
                 </div>
             </div>
+            
             <div class="contenedorInfoDetalleProd">
                 <h3>{{ product.name ? product.name.toUpperCase() : 'Cargando...' }}</h3>
                 <div class="precioDetalleProd">
