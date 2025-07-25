@@ -2,14 +2,18 @@
     import { ref, onMounted, computed, nextTick, watch } from 'vue'
     import Nuevo from '../components/Nuevo.vue'
     import { useProducts } from '../js/composables/useProducts.js'
+    import { useFavorites } from '../js/composables/useFavorites.js'
+    import { useUserStore } from '../js/stores/userLogged.js'
     import { checkOverflow } from '../js/overflow.js'
 
     const props = defineProps({
         id: String
     })
 
-    // Composable para productos
+    // Composables
     const { loading, error, getProductById, getImagesByColor, getAvailableColors, getAvailableSizes, getVariantStock } = useProducts();
+    const { loading: favLoading, error: favError, isProductInFavorites, toggleFavorite } = useFavorites();
+    const userStore = useUserStore();
 
     // Estado reactivo
     const product = ref(null);
@@ -17,6 +21,7 @@
     const selectedSize = ref(null);
     const quantity = ref(1);
     const selectedImageIndex = ref(0);
+    const isFavorite = ref(false);
 
     // Refs for DOM elements
     const mainImageContainerRef = ref(null);
@@ -60,11 +65,56 @@
                 if (colors.length > 0) {
                     selectColor(colors[0]);
                 }
+                
+                // Verificar si el producto está en favoritos
+                await checkFavoriteStatus();
             } else {
                 console.error('Product not found');
             }
         } catch (err) {
             console.error('Error loading product:', err);
+        }
+    };
+
+    const checkFavoriteStatus = async () => {
+        if (!props.id) {
+            isFavorite.value = false;
+            return;
+        }
+
+        // Solo verificar si el usuario está autenticado según el store
+        if (!userStore.isLoggedIn) {
+            isFavorite.value = false;
+            return;
+        }
+        
+        try {
+            isFavorite.value = await isProductInFavorites(props.id);
+        } catch (err) {
+            console.error('Error checking favorite status:', err);
+            isFavorite.value = false;
+        }
+    };
+
+    const handleFavoriteToggle = async () => {
+        if (!props.id) return;
+        
+        // Verificar si el usuario está autenticado
+        if (!userStore.isLoggedIn) {
+            // Redirigir al login o mostrar mensaje
+            alert('Debes iniciar sesión para agregar productos a favoritos');
+            return;
+        }
+        
+        try {
+            const success = await toggleFavorite(props.id);
+            if (success) {
+                isFavorite.value = !isFavorite.value;
+            }
+        } catch (err) {
+            console.error('Error toggling favorite:', err);
+            // Mostrar mensaje de error al usuario
+            alert('Error al actualizar favoritos. Inténtalo de nuevo.');
         }
     };
 
@@ -162,10 +212,13 @@
                     });
                 }
             }
-        }, 150); // Debounce scroll event
+        }, 50); // Debounce scroll event
     };
 
     onMounted(async () => {
+        // Cargar usuario verificando autenticación con el backend
+        await userStore.loadUserFromStorage();
+        
         await loadProduct();
 
         nextTick(() => {
@@ -244,17 +297,17 @@
                     <p class="preDetText">Precio</p>
                     <p class="preDet">
                         <span v-if="product.discount_percentage > 0 && product.price" style="text-decoration: line-through; color: #999; font-size: 0.9rem;">
-                            ${{ product.price.toLocaleString('es-CO') }}
+                            ${{ Math.floor(product.price).toLocaleString('es-CO') }}
                         </span>
                         <span v-if="product.final_price">
-                            ${{ product.final_price.toLocaleString('es-CO') }}
+                           ${{ Math.floor(product.final_price).toLocaleString('es-CO') }}
                         </span>
                         <span v-else-if="product.price">
-                            ${{ product.price.toLocaleString('es-CO') }}
+                            ${{ Math.floor(product.price).toLocaleString('es-CO') }}
                         </span>
                         <span v-else>Precio no disponible</span>
                         <span v-if="product.discount_percentage > 0" style="color: #28a745; font-size: 0.8rem; margin-left: 0.5rem;">
-                            (-{{ product.discount_percentage }}%)
+                            (-{{ Math.floor(product.discount_percentage) }}%)
                         </span>
                     </p>
                 </div>
@@ -316,7 +369,27 @@
                 </div>
                 <div class="precioDetalleProd addFavDet">
                     <div class="contColorDet">
-                        <p class="addFavText"><img src="/img/heartIcon.png" alt=""> AGREGAR A MIS FAVORITOS</p>
+                        <p 
+                            class="addFavText" 
+                            @click="handleFavoriteToggle" 
+                            :class="{ 
+                                'favorite-active': isFavorite,
+                                'loading': favLoading 
+                            }"
+                            :style="{ 
+                                cursor: favLoading ? 'wait' : 'pointer',
+                                opacity: favLoading ? 0.7 : 1 
+                            }"
+                        >
+                            <i 
+                                class="fa-solid fa-heart" 
+                                :style="{ 
+                                    color: isFavorite ? '#ff69b4' : '#666',
+                                    marginRight: '8px'
+                                }"
+                            ></i>
+                            {{ favLoading ? 'PROCESANDO...' : (isFavorite ? 'EN FAVORITOS' : 'AGREGAR A MIS FAVORITOS') }}
+                        </p>
                     </div>
                 </div>
                 <div class="precioDetalleProd">

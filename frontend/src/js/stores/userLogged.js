@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { useApi } from '../composables/useFetch.js';
 
 export const useUserStore = defineStore('userLogged', {
     state: () => ({
@@ -11,58 +12,43 @@ export const useUserStore = defineStore('userLogged', {
         getUserRole: (state) => state.userLogged?.role || null,
     },
     actions: {
-        setUser(userInfo, token) {
-            if (userInfo && token) {
+        setUser(userInfo) {
+            if (userInfo) {
                 this.userLogged = userInfo;
                 this.isAuthenticated = true;
-                
-                // Guardar en localStorage con validación
-                try {
-                    localStorage.setItem('authToken', token);
-                    localStorage.setItem('user', JSON.stringify(userInfo));
-                } catch (error) {
-                    console.error('Error al guardar en localStorage:', error);
-                }
+                // El token se maneja automáticamente por cookies, no necesitamos localStorage
             }
         },
         clearUser() {
             this.userLogged = null;
             this.isAuthenticated = false;
-            
-            // Limpiar localStorage
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('user');
+            // Las cookies se manejan automáticamente por el backend al hacer logout
         },
-        loadUserFromStorage() {
-            const token = localStorage.getItem('authToken');
-            const userData = localStorage.getItem('user');
-            
-            if (token && userData && userData !== 'undefined' && userData !== 'null') {
-                try {
-                    const parsedUser = JSON.parse(userData);
-                    if (parsedUser && typeof parsedUser === 'object') {
-                        this.userLogged = parsedUser;
-                        this.isAuthenticated = true;
-                    } else {
-                        this.clearUser();
-                    }
-                } catch (error) {
-                    console.error('Error al cargar datos del usuario:', error);
+        async loadUserFromStorage() {
+            // Verificar estado de autenticación con el backend usando cookies
+            try {
+                const { data, error } = await useApi('/api/auth/profile', 'GET');
+                
+                if (!error.value && data.value?.success && data.value?.data?.user) {
+                    this.userLogged = data.value.data.user;
+                    this.isAuthenticated = true;
+                } else {
                     this.clearUser();
                 }
-            } else {
+            } catch (err) {
+                console.error('Error al verificar autenticación:', err);
                 this.clearUser();
             }
         },
-        logout() {
-            this.clearUser();
-        },
-        clearCorruptedData() {
-            // Limpiar datos corruptos del localStorage
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('user');
-            this.userLogged = null;
-            this.isAuthenticated = false;
+        async logout() {
+            try {
+                // Llamar al endpoint de logout para limpiar cookies del servidor
+                await useApi('/api/auth/logout', 'POST');
+            } catch (error) {
+                console.error('Error durante logout:', error);
+            } finally {
+                this.clearUser();
+            }
         }
     },
 });

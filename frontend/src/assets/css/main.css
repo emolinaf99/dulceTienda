@@ -131,12 +131,6 @@ textarea:focus {
   background-color: #f1f1f1;  /* color de fondo de la pista */
 }
 
-
-/* Oculta el checkbox original */
-input[type="checkbox"] {
-  display: none;
-}
-
 /* Crea un nuevo diseño personalizado */
 input[type="checkbox"] + label {
   position: relative;

@@ -18,6 +18,9 @@ export async function useApi(url, method = 'GET', body = null, contentType = 'ap
         headers['Content-Type'] = contentType;
       }
 
+      // El token se maneja automáticamente a través de cookies con credentials: 'include'
+      // No necesitamos agregar el header Authorization manualmente
+
       const options = {
         method,
         headers,

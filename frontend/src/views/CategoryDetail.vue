@@ -97,7 +97,7 @@ const toggleColor = (colorId) => {
 
 <template>
   <section class="contenedorGeneralDeseos gap1rem">
-    <h1 v-if="!loading && categoryName">{{ categoryName.toUpperCase() }}</h1>
+    <h3 v-if="!loading && categoryName">{{ categoryName.toUpperCase() }}</h3>
     <h4 v-else-if="loading">CARGANDO...</h4>
     <h4 v-else>CATEGORÍA</h4>
     
@@ -129,45 +129,39 @@ const toggleColor = (colorId) => {
           
           <!-- Filtro por tallas -->
           <div v-if="filters.availableSizes?.length > 0" class="filterGroup">
-            <h6>Tallas</h6>
-            <div class="filterOptions">
-              <label 
+            <h6>Talla</h6>
+            <div class="sizeGrid">
+              <button 
                 v-for="size in filters.availableSizes" 
                 :key="size.id" 
-                class="filterOption"
+                class="sizeButton"
+                :class="{ 'selected': selectedSizes.includes(size.id) }"
+                @click="toggleSize(size.id)"
               >
-                <input 
-                  type="checkbox" 
-                  :value="size.id" 
-                  @change="toggleSize(size.id)"
-                  :checked="selectedSizes.includes(size.id)"
-                >
-                <span>{{ size.name }}</span>
-              </label>
+                {{ size.name }}
+              </button>
             </div>
           </div>
           
           <!-- Filtro por colores -->
           <div v-if="filters.availableColors?.length > 0" class="filterGroup">
-            <h6>Colores</h6>
-            <div class="colorOptions">
+            <h6>Color</h6>
+            <div class="colorCheckboxes">
               <label 
                 v-for="color in filters.availableColors" 
                 :key="color.id" 
-                class="colorOption"
+                class="colorCheckboxOption"
                 :title="color.name"
+                @click="toggleColor(color.id)"
               >
                 <input 
                   type="checkbox" 
                   :value="color.id" 
-                  @change="toggleColor(color.id)"
                   :checked="selectedColors.includes(color.id)"
+                  class="colorCheckbox"
+                  readonly
                 >
-                <span 
-                  class="colorSwatch" 
-                  :style="{ backgroundColor: color.hex_code }"
-                ></span>
-                <span class="colorName">{{ color.name }}</span>
+                <span class="checkboxLabel">{{ color.name }}</span>
               </label>
             </div>
           </div>
@@ -256,45 +250,39 @@ const toggleColor = (colorId) => {
         <div class="modalBody">
           <!-- Filtro por tallas -->
           <div v-if="filters.availableSizes?.length > 0" class="filterGroup">
-            <h6>Tallas</h6>
-            <div class="filterOptions">
-              <label 
+            <h6>Talla</h6>
+            <div class="sizeGrid">
+              <button 
                 v-for="size in filters.availableSizes" 
                 :key="size.id" 
-                class="filterOption"
+                class="sizeButton"
+                :class="{ 'selected': selectedSizes.includes(size.id) }"
+                @click="toggleSize(size.id)"
               >
-                <input 
-                  type="checkbox" 
-                  :value="size.id" 
-                  @change="toggleSize(size.id)"
-                  :checked="selectedSizes.includes(size.id)"
-                >
-                <span>{{ size.name }}</span>
-              </label>
+                {{ size.name }}
+              </button>
             </div>
           </div>
           
           <!-- Filtro por colores -->
           <div v-if="filters.availableColors?.length > 0" class="filterGroup">
-            <h6>Colores</h6>
-            <div class="colorOptions">
+            <h6>Color</h6>
+            <div class="colorCheckboxes">
               <label 
                 v-for="color in filters.availableColors" 
                 :key="color.id" 
-                class="colorOption"
+                class="colorCheckboxOption"
                 :title="color.name"
+                @click="toggleColor(color.id)"
               >
                 <input 
                   type="checkbox" 
                   :value="color.id" 
-                  @change="toggleColor(color.id)"
                   :checked="selectedColors.includes(color.id)"
+                  class="colorCheckbox"
+                  readonly
                 >
-                <span 
-                  class="colorSwatch" 
-                  :style="{ backgroundColor: color.hex_code }"
-                ></span>
-                <span class="colorName">{{ color.name }}</span>
+                <span class="checkboxLabel">{{ color.name }}</span>
               </label>
             </div>
           </div>
@@ -332,7 +320,7 @@ const toggleColor = (colorId) => {
 
 <style scoped>
 
-.contenedorGeneralDeseos h1{
+.contenedorGeneralDeseos h4{
   margin: 0 !important;
 }
 
@@ -425,49 +413,203 @@ const toggleColor = (colorId) => {
   letter-spacing: 0.5px;
 }
 
-.filterOptions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+/* Estilos para tallas en grid */
+.sizeGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 8px;
 }
 
-.filterOption {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+.sizeButton {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
+  text-align: center;
+  transition: all 0.3s ease;
+  color: #333;
 }
 
-.filterOption input[type="checkbox"] {
-  margin: 0;
+.sizeButton:hover:not(.selected) {
+  border-color: #333;
 }
 
-.colorOptions {
+.sizeButton.selected {
+  background: #333 !important;
+  color: white !important;
+  border-color: #333 !important;
+}
+
+.sizeButton:not(.selected) {
+  background: white !important;
+  color: #333 !important;
+  border-color: #ddd !important;
+}
+
+.sizeButton:focus {
+  outline: none;
+}
+
+.sizeButton:active:not(.selected) {
+  background: white !important;
+  border-color: #ddd !important;
+}
+
+/* Estilos para checkboxes de colores */
+.colorCheckboxes {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 8px;
+  margin-top: 8px;
 }
 
-.colorOption {
+.colorCheckboxOption {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
   cursor: pointer;
   font-size: 14px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: none;
+  background: transparent !important;
+  outline: none;
 }
 
-.colorSwatch {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
+.colorCheckboxOption:focus {
+  background: transparent !important;
+  outline: none;
+}
+
+.colorCheckboxOption:active {
+  background: transparent !important;
+}
+
+.colorCheckboxOption * {
+  background: transparent !important;
+}
+
+.colorCheckboxOption *:active {
+  background: transparent !important;
+}
+
+.colorCheckboxOption *:focus {
+  background: transparent !important;
+}
+
+.colorCheckboxOption:hover {
+  background-color: transparent;
+}
+
+/* Estilos para checkboxes personalizados */
+.colorCheckbox {
+  width: 18px;
+  height: 18px;
   border: 2px solid #ddd;
-  flex-shrink: 0;
+  border-radius: 3px;
+  background: white;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
 }
 
-.colorName {
+.colorCheckbox:hover:not(:checked) {
+  border-color: #333;
+}
+
+.colorCheckbox:checked {
+  background: #333 !important;
+  border-color: #333 !important;
+}
+
+.colorCheckbox:not(:checked) {
+  background: white !important;
+  border-color: #ddd !important;
+}
+
+.colorCheckbox:focus {
+  outline: none;
+}
+
+.colorCheckbox:active:not(:checked) {
+  background: white !important;
+  border-color: #ddd !important;
+}
+
+/* Eliminar efectos nativos del navegador completamente */
+.colorCheckbox::-webkit-appearance {
+  display: none;
+}
+
+.colorCheckbox::-moz-appearance {
+  display: none;
+}
+
+.colorCheckbox::before {
+  display: none !important;
+}
+
+.colorCheckbox::after:not(.colorCheckbox:checked::after) {
+  display: none !important;
+}
+
+/* Eliminar highlight azul de selección */
+.colorCheckboxOption::selection {
+  background: transparent;
+}
+
+.colorCheckboxOption::-moz-selection {
+  background: transparent;
+}
+
+.colorCheckbox::selection {
+  background: transparent;
+}
+
+.colorCheckbox::-moz-selection {
+  background: transparent;
+}
+
+/* Eliminar tap highlight en móviles */
+.colorCheckboxOption {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.colorCheckbox {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+.colorCheckbox:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.checkboxLabel {
+  font-size: 14px;
+  color: #333;
   text-transform: capitalize;
 }
+
+/* Estilos antiguos eliminados - ya no se usan */
 
 .priceInputs {
   display: flex;

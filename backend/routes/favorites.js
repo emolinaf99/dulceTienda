@@ -15,10 +15,10 @@ const addToFavoritesValidation = [
   body('product_id').isInt({ min: 1 }).withMessage('ID de producto inválido')
 ];
 
-router.get('/', authenticate, authorize('cliente', 'mayorista'), getFavorites);
-router.post('/', authenticate, authorize('cliente', 'mayorista'), addToFavoritesValidation, addToFavorites);
-router.delete('/:id', authenticate, authorize('cliente', 'mayorista'), removeFromFavorites);
-router.delete('/product/:product_id', authenticate, authorize('cliente', 'mayorista'), removeFromFavoritesByProduct);
-router.get('/check/:product_id', authenticate, authorize('cliente', 'mayorista'), checkFavorite);
+router.get('/', authenticate, authorize('admin', 'cliente', 'mayorista'), getFavorites);
+router.post('/', authenticate, authorize('admin', 'cliente', 'mayorista'), addToFavoritesValidation, addToFavorites);
+router.delete('/:id', authenticate, authorize('admin', 'cliente', 'mayorista'), removeFromFavorites);
+router.delete('/product/:product_id', authenticate, authorize('admin', 'cliente', 'mayorista'), removeFromFavoritesByProduct);
+router.get('/check/:product_id', authenticate, authorize('admin', 'cliente', 'mayorista'), checkFavorite);
 
 export default router;

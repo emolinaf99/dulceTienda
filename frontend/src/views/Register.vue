@@ -49,8 +49,8 @@
             }
 
             if (data.value && data.value.success) {
-                // Usar el store para guardar el usuario
-                userStore.setUser(data.value.user, data.value.token)
+                // Usar el store para guardar el usuario (el token ya está en cookies)
+                userStore.setUser(data.value.user)
                 
                 router.push('/')
             } else {

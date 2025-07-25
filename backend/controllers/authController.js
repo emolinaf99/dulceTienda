@@ -63,7 +63,7 @@ export const register = async (req, res) => {
     res.cookie('authToken', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // Use secure in production
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // Lax for development
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       path: '/'
     });
@@ -133,7 +133,7 @@ export const login = async (req, res) => {
     res.cookie('authToken', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // Use secure in production
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // Lax for development
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       path: '/'
     });
@@ -240,7 +240,7 @@ export const logout = async (req, res) => {
     res.clearCookie('authToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // Lax for development
       path: '/'
     });
 
