@@ -202,7 +202,6 @@ export const createProduct = async (req, res) => {
       price,
       discount_percentage = 0,
       variants, // Array de {size_id, color_id, stock}
-      colorImages, // Array de {color_id, images}
       category_id,
       is_featured = false
     } = req.body;
@@ -210,7 +209,7 @@ export const createProduct = async (req, res) => {
     console.log('=== PRODUCT CREATION DEBUG ===');
     console.log('Request body:', req.body);
     console.log('Received product data:', {
-      name, description, price, category_id, variants, colorImages
+      name, description, price, category_id, variants
     });
     console.log('Files received:', req.files?.length || 0);
     console.log('Request headers:', req.headers['content-type']);
@@ -280,46 +279,48 @@ export const createProduct = async (req, res) => {
     }
 
     // Crear imágenes por color
-    if (colorImages && req.files && req.files.length > 0) {
-      console.log('Processing color images:', colorImages);
-      const colorImageData = JSON.parse(colorImages);
-      console.log('Parsed color images:', colorImageData);
-      console.log('Available files:', req.files.map(f => f.filename));
+    if (req.files && req.files.length > 0) {
+      console.log('Processing files:', req.files.map(f => ({ fieldname: f.fieldname, filename: f.filename })));
       
       const imagePromises = [];
-      let fileIndex = 0;
 
-      // Procesar imágenes por color
-      colorImageData.forEach((colorImg) => {
-        console.log('Processing color:', colorImg.color_id);
-        // Cada color puede tener múltiples imágenes
-        const numberOfImagesForColor = colorImg.images ? colorImg.images.length : 0;
-        console.log('Number of images for this color:', numberOfImagesForColor);
+      // Procesar archivos por fieldname (formato: color_{colorId}_images)
+      req.files.forEach(file => {
+        console.log('Processing file:', file.fieldname, file.filename);
         
-        for (let i = 0; i < numberOfImagesForColor && fileIndex < req.files.length; i++) {
-          if (req.files[fileIndex]) {
-            console.log('Creating image record:', {
+        // Extraer colorId del fieldname
+        const fieldnameParts = file.fieldname.split('_');
+        if (fieldnameParts[0] === 'color' && fieldnameParts[2] === 'images') {
+          const colorId = parseInt(fieldnameParts[1]);
+          
+          console.log('Creating image record for color:', colorId);
+          imagePromises.push(
+            ImgColorProduct.create({
               product_id: product.id,
-              color_id: colorImg.color_id,
-              img: req.files[fileIndex].filename
-            });
-            
-            imagePromises.push(
-              ImgColorProduct.create({
-                product_id: product.id,
-                color_id: colorImg.color_id,
-                img: req.files[fileIndex].filename
-              })
-            );
-            fileIndex++;
-          }
+              color_id: colorId,
+              img: file.filename
+            })
+          );
         }
       });
 
-      await Promise.all(imagePromises);
-      console.log('Images created successfully');
+      if (imagePromises.length > 0) {
+        await Promise.all(imagePromises);
+        console.log('Images created successfully:', imagePromises.length);
+        
+        // Establecer la primera imagen como main_image
+        const firstFile = req.files[0];
+        if (firstFile) {
+          await product.update({
+            main_image: `/uploads/products/${firstFile.filename}`
+          });
+          console.log('Main image set:', firstFile.filename);
+        }
+      } else {
+        console.log('No valid image files to process');
+      }
     } else {
-      console.log('No color images to create');
+      console.log('No files received');
     }
 
     // Obtener producto completo con todas las relaciones

@@ -326,11 +326,30 @@ const handleSubmit = async () => {
       }
     });
     
-    // Add variants and existing images info as JSON
+    // Preparar información de imágenes por color para el backend
+    const colorImagesInfo = [];
+    selectedColors.value.forEach(colorId => {
+      if (colorImages.value[colorId]) {
+        const newImagesForColor = colorImages.value[colorId].filter(img => !img.isExisting).length;
+        if (newImagesForColor > 0) {
+          colorImagesInfo.push({
+            color_id: colorId,
+            images: Array(newImagesForColor).fill(null) // El backend solo necesita el número de imágenes por color
+          });
+        }
+      }
+    });
+
+    // Add variants and images info as JSON
     console.log('Adding variants as JSON:', JSON.stringify(variants));
-    console.log('Adding keepExistingImages as JSON:', JSON.stringify(keepExistingImages));
+    console.log('Adding colorImages as JSON:', JSON.stringify(colorImagesInfo));
     formData.append('variants', JSON.stringify(variants));
-    formData.append('keepExistingImages', JSON.stringify(keepExistingImages));
+    formData.append('colorImages', JSON.stringify(colorImagesInfo));
+    
+    if (modalMode.value === 'edit') {
+      console.log('Adding keepExistingImages as JSON:', JSON.stringify(keepExistingImages));
+      formData.append('keepExistingImages', JSON.stringify(keepExistingImages));
+    }
     
     // Add images with color info in fieldname
     selectedColors.value.forEach(colorId => {
@@ -569,8 +588,9 @@ const handleColorImageChange = (colorId, event) => {
 
 const formatPrice = (price) => {
   return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP'
+    minimumFractionDigits: 0, // Asegura que no haya decimales
+    maximumFractionDigits: 0, // Asegura que no haya decimales
+    useGrouping: true // Habilita el separador de miles (por defecto es true, pero es bueno ser explícito)
   }).format(price);
 };
 
@@ -859,26 +879,19 @@ onMounted(() => {
           <div class="adminFormGroup" v-if="colors.length > 0">
             <label>Configuración por Color *</label>
             <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
-              <label 
+              <div 
                 v-for="color in colors" 
                 :key="color.id" 
-                style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9;"
-                :style="{ 
-                  background: selectedColors.includes(color.id) ? '#e3f2fd' : '#f9f9f9',
-                  borderColor: selectedColors.includes(color.id) ? '#2196f3' : '#ddd'
-                }"
+                class="admin-color-option"
+                :class="{ 'selected': selectedColors.includes(color.id) }"
+                @click="toggleColor(color.id)"
               >
-                <input 
-                  type="checkbox" 
-                  :checked="selectedColors.includes(color.id)"
-                  @change="toggleColor(color.id)"
-                />
                 <div 
                   style="width: 20px; height: 20px; border-radius: 50%; border: 1px solid #ccc;"
                   :style="{ backgroundColor: color.hex_code || '#ccc' }"
                 ></div>
                 {{ color.name }}
-              </label>
+              </div>
             </div>
             <small style="color: #666; display: block; margin-top: 0.5rem;">
               Selecciona los colores disponibles para este producto
@@ -1155,3 +1168,37 @@ onMounted(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Estilos para opciones de colores en el panel admin */
+.admin-color-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #f9f9f9;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.admin-color-option:hover {
+  border-color: #999;
+}
+
+.admin-color-option.selected {
+  background: #f0f0f0 !important;
+  border-color: #333 !important;
+  border-width: 2px !important;
+}
+
+.admin-color-option:focus {
+  outline: none;
+}
+
+.admin-color-option:active {
+  transform: scale(0.98);
+}
+</style>
