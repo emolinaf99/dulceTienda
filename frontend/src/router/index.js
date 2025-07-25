@@ -42,6 +42,18 @@ const router = createRouter({
       component: () => import('../views/Checkouts.vue')
     },
     {
+      path: '/category/new',
+      name: 'NewProducts',
+      component: () => import('../views/CategoryDetail.vue'),
+      props: { id: 'new' } // Pasar 'new' como prop especial
+    },
+    {
+      path: '/category/discount',
+      name: 'DiscountProducts', 
+      component: () => import('../views/CategoryDetail.vue'),
+      props: { id: 'discount' } // Pasar 'discount' como prop especial
+    },
+    {
       path: '/category/:id',
       name: 'CategoryDetail',
       component: () => import('../views/CategoryDetail.vue'),

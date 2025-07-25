@@ -124,8 +124,8 @@ const createDefaultCategories = async () => {
     
     if (categoriesCount === 0) {
       // Obtener los IDs de los tipos de tallas
-      const prendasSuperiores = await TypeSize.findOne({ where: { description: 'PRENDAS SUPERIORES' } });
-      const prendasInferiores = await TypeSize.findOne({ where: { description: 'PRENDAS INFERIORES' } });
+      const prendasSuperiores = await TypeSize.findOne({ where: { description: 'Tallaje por letras' } });
+      const prendasInferiores = await TypeSize.findOne({ where: { description: 'Tallaje pantalones' } });
 
       const defaultCategories = [
         {
@@ -149,20 +149,6 @@ const createDefaultCategories = async () => {
           sort_order: 3,
           type_size_id: prendasSuperiores?.id
         },
-        {
-          name: 'Lo Nuevo',
-          description: 'Los últimos productos agregados',
-          type: 'nuevo',
-          sort_order: 4,
-          type_size_id: null
-        },
-        {
-          name: 'Descuentos',
-          description: 'Productos con descuentos especiales',
-          type: 'rebajas',
-          sort_order: 5,
-          type_size_id: null
-        }
       ];
 
       await Category.bulkCreate(defaultCategories);

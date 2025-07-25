@@ -103,6 +103,12 @@
     </section>
     <section class="contenedorSectionTwo">
         <section class="s2Header" id="navbarCategorias">
+            <RouterLink to="/category/new">
+                <div class="itemSecondNavbar">LO NUEVO</div>
+            </RouterLink>
+            <RouterLink to="/category/discount">
+                <div class="itemSecondNavbar">DESCUENTOS</div>
+            </RouterLink>
             <RouterLink 
                 v-for="category in categories" 
                 :key="category.id" 

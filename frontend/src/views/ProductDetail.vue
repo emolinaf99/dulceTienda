@@ -1,7 +1,5 @@
 <script setup>
-    import {reactive,ref,onMounted, watch, computed} from 'vue'
-    import { RouterLink, RouterView, useRoute} from 'vue-router'
-    import {scrollearConClick} from '/src/js/scrollWithClick'
+    import { ref, onMounted, computed, nextTick } from 'vue'
     import Nuevo from '../components/Nuevo.vue'
     import { useProducts } from '../js/composables/useProducts.js'
 
@@ -17,6 +15,11 @@
     const selectedColor = ref(null);
     const selectedSize = ref(null);
     const quantity = ref(1);
+    const selectedImageIndex = ref(0);
+
+    // Refs for DOM elements
+    const mainImageContainerRef = ref(null);
+    const thumbnailContainerRef = ref(null);
 
     // Computed properties
     const availableColors = computed(() => {
@@ -51,8 +54,6 @@
             
             if (productData) {
                 product.value = productData;
-                
-                // Seleccionar el primer color disponible por defecto
                 const colors = getAvailableColors(productData);
                 
                 if (colors.length > 0) {
@@ -69,15 +70,50 @@
     const selectColor = (color) => {
         selectedColor.value = color;
         selectedSize.value = null; // Reset size when color changes
-        
-        // Reinicializar las imágenes después de cambiar color
-        setTimeout(() => {
-            initializeImageSlider();
-        }, 100);
+        selectImage(0); // Reset to the first image of the new color
     };
 
     const selectSize = (size) => {
         selectedSize.value = size;
+    };
+
+    const selectImage = (index) => {
+        if (index < 0 || index >= currentImages.value.length) return;
+        
+        selectedImageIndex.value = index;
+
+        nextTick(() => {
+            // Scroll main image
+            const container = mainImageContainerRef.value;
+            if (container) {
+                const imageEl = Array.from(container.children).filter(c => c.tagName === 'IMG')[index];
+                if(imageEl){
+                    container.scrollTo({
+                        left: imageEl.offsetLeft,
+                        behavior: 'smooth'
+                    });
+                }
+            }
+
+            // Scroll thumbnail into view
+            const thumbContainer = thumbnailContainerRef.value;
+            if (thumbContainer && thumbContainer.children[index]) {
+                const thumbEl = thumbContainer.children[index];
+                thumbEl.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest',
+                    inline: 'nearest'
+                });
+            }
+        });
+    };
+
+    const nextImage = () => {
+        selectImage(selectedImageIndex.value + 1);
+    };
+
+    const prevImage = () => {
+        selectImage(selectedImageIndex.value - 1);
     };
 
     const changeQuantity = (delta) => {
@@ -87,128 +123,50 @@
         }
     };
 
-    const initializeImageSlider = () => {
-        setTimeout(() => {
-            let contenedorScroll = document.querySelector('.vitrinaSlide')
-            let itemIntoScroll = document.querySelector('.vitrinaSlide img')
+    // Sync thumbnail selection on manual scroll of main image
+    let scrollTimeout = null;
+    const handleMainImageScroll = () => {
+        if (scrollTimeout) clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+            const container = mainImageContainerRef.value;
+            if (!container || container.children.length === 0) return;
 
-            let scrollDerecha = document.querySelector('.scrollDerechaDetalle')
-            let scrollIzquierda = document.querySelector('.scrollIzquierdaDetalle')
+            const imageElements = Array.from(container.children).filter(c => c.tagName === 'IMG');
+            if(imageElements.length === 0) return;
 
-            let contenedorImagesMini = document.querySelector('.contenedorImagenesMini')
-            let imagenesMini = document.querySelectorAll('.contenedorImagenesMini img')
-            let imagenesGrandes = document.querySelectorAll('.vitrinaSlide img')
+            const containerCenter = container.scrollLeft + container.clientWidth / 2;
+            let closestIndex = -1;
+            let minDistance = Infinity;
 
-            if (!contenedorScroll || !scrollDerecha || !scrollIzquierda || !imagenesMini.length) {
-                return;
-            }
+            imageElements.forEach((img, index) => {
+                const imgCenter = img.offsetLeft + img.offsetWidth / 2;
+                const distance = Math.abs(imgCenter - containerCenter);
 
-        function findVisibleImage(derechaOIzquierda) { // para encontrar la imagen visible
-            const images = Array.from(imagenesMini);
-            const contRect = contenedorImagesMini.getBoundingClientRect();
-
-            for (let i = 0; i < images.length; i++) {
-                const img = images[i];
-                const rect = img.getBoundingClientRect();
-
-                if (
-                    rect.top >= contRect.top &&
-                    rect.left >= contRect.left &&
-                    rect.bottom <= contRect.bottom &&
-                    rect.right <= contRect.right
-                ) {
-                    // Si el scroll es hacia la derecha (0), devolver la siguiente imagen
-                    if (derechaOIzquierda === 0 && i < images.length - 1) {
-                        return images[i + 1];
-                    }
-                    // Si el scroll es hacia la izquierda (1), devolver la imagen anterior
-                    if (derechaOIzquierda === 1 && i > 0) {
-                        return images[i - 1];
-                    }
-                    return img; // Devuelve la imagen actual si no hay siguiente/anterior
-                }
-            }
-            return null;
-        }
-
-        function selectImgMini(img) {
-            let imagenMiniEncontrada = Array.from(imagenesMini).find(imagenP => imagenP.src == img.src)
-
-            imagenesMini.forEach((imagen) => {
-                imagen.style.border = '0'
-            })
-
-            img.style.border = '2px solid #333333' 
-                
-            // Desplazar el contenedor hasta la imagen encontrada
-            imagenMiniEncontrada.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-        }
-        
-        scrollDerecha.addEventListener('click',() => {
-            scrollearConClick(contenedorScroll,itemIntoScroll,0)
-            const visibleImage = findVisibleImage(0)
-            selectImgMini(visibleImage)
-        })
-
-        scrollIzquierda.addEventListener('click',() => {
-            scrollearConClick(contenedorScroll,itemIntoScroll,1)
-            
-            const visibleImage = findVisibleImage(1)
-            selectImgMini(visibleImage)
-        })
-
-        let previousScrollLeft = 0; // Almacena la posición anterior del scroll
-
-        contenedorScroll.addEventListener('scroll', () => {
-            const currentScrollLeft = contenedorScroll.scrollLeft; // Posición actual del scroll
-
-            if (currentScrollLeft > previousScrollLeft) {
-                const visibleImage = findVisibleImage(0)
-                selectImgMini(visibleImage)
-                
-            } else if (currentScrollLeft < previousScrollLeft) {
-                const visibleImage = findVisibleImage(1)
-                selectImgMini(visibleImage)
-            }
-
-            // Actualiza la posición previa del scroll
-            previousScrollLeft = currentScrollLeft;
-        });
-
-
-        imagenesMini.forEach(img => {
-            img.addEventListener('click', () => { // cuando una imagen pequeña escucha click
-                imagenesMini.forEach((imagen) => {
-                    imagen.style.border = '0';
-                });
-                img.style.border = '2px solid #333333';
-                
-                // Encuentra la imagen grande correspondiente
-                let imagenGrandeEncontrada = Array.from(imagenesGrandes).find(imagenG => imagenG.src === img.src);
-                
-                if (imagenGrandeEncontrada) {
-                    // Calcula la posición horizontal para desplazar
-                    const offsetLeft = imagenGrandeEncontrada.offsetLeft;
-                    
-                    // Desplazar el contenedor horizontalmente
-                    contenedorScroll.scrollTo({
-                        left: offsetLeft,
-                        behavior: 'smooth'
-                    });
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestIndex = index;
                 }
             });
-        });
-        }, 50); // Pequeño delay para asegurar que el DOM se ha actualizado
+
+            if (closestIndex !== -1 && selectedImageIndex.value !== closestIndex) {
+                selectedImageIndex.value = closestIndex;
+                 // Scroll thumbnail into view
+                const thumbContainer = thumbnailContainerRef.value;
+                if (thumbContainer && thumbContainer.children[closestIndex]) {
+                    const thumbEl = thumbContainer.children[closestIndex];
+                    thumbEl.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'nearest',
+                        inline: 'nearest'
+                    });
+                }
+            }
+        }, 150); // Debounce scroll event
     };
 
     onMounted(async () => {
-        // Cargar datos del producto
         await loadProduct();
-        
-        // Inicializar slider de imágenes
-        initializeImageSlider();
     });
-
 
 </script>
 
@@ -225,14 +183,15 @@
         </div>
 
         <!-- Product Content -->
-        <div v-else-if="product && product.id" class="contenedorDetalleProducto">
-            <div class="contenedorImagenesMini">
+        <div v-else-if="product && product.name" class="contenedorDetalleProducto">
+            <div class="contenedorImagenesMini" ref="thumbnailContainerRef">
                 <img 
                     v-for="(image, index) in currentImages" 
                     :key="index"
                     :src="image" 
                     :alt="product.name || 'Producto'"
-                    :style="{ border: index === 0 ? '2px solid #333333' : '0' }"
+                    :style="{ border: index === selectedImageIndex ? '2px solid #333333' : '0', cursor: 'pointer' }"
+                    @click="selectImage(index)"
                 >
                 <div v-if="currentImages.length === 0" style="text-align: center; padding: 1rem; color: #666;">
                     Sin imágenes disponibles
@@ -240,11 +199,11 @@
             </div>
             <div class="sectionSlide" id="sectionSlideDetail">
                 <div class="botonesSlide">
-                    <i class="fa-solid fa-chevron-left scrollIzquierdaDetalle"></i>
-                    <i class="fa-solid fa-chevron-right scrollDerechaDetalle"></i>
+                    <i class="fa-solid fa-chevron-left scrollIzquierdaDetalle" @click="prevImage"></i>
+                    <i class="fa-solid fa-chevron-right scrollDerechaDetalle" @click="nextImage"></i>
                 </div>
                 <div class="contenedorImagenesDetalle">
-                    <div class="vitrinaSlide">
+                    <div class="vitrinaSlide" ref="mainImageContainerRef" @scroll="handleMainImageScroll">
                         <img 
                             v-for="(image, index) in currentImages" 
                             :key="index"
@@ -292,9 +251,6 @@
                             @click="selectColor(color)"
                             :title="color.name"
                         ></div>
-                        <div v-if="availableColors.length === 0" style="color: #666; font-style: italic;">
-                            Sin colores configurados para este producto
-                        </div>
                     </div>
                 </div>
                 <div class="precioDetalleProd" v-if="availableSizes.length > 0">
@@ -366,6 +322,3 @@
 
     <Nuevo></Nuevo>
 </template>
-
-
-

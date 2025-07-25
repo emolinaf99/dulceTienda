@@ -25,7 +25,7 @@ const Category = sequelize.define('Category', {
     defaultValue: true
   },
   type: {
-    type: DataTypes.ENUM('normal', 'nuevo', 'rebajas'),
+    type: DataTypes.ENUM('normal'),
     defaultValue: 'normal',
     allowNull: false
   },

@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import { useApi } from './useFetch.js'
 
-export function useCategoryProducts(categoryId) {
+export function useCategoryProducts() {
   const category = ref(null)
   const products = ref([])
   const pagination = ref(null)
@@ -25,39 +25,71 @@ export function useCategoryProducts(categoryId) {
     error.value = null
 
     try {
-      // Construir query string
-      const params = new URLSearchParams()
+      let url
       
-      if (queryParams.sizes && queryParams.sizes.length > 0) {
-        queryParams.sizes.forEach(size => params.append('sizes', size))
-      }
-      
-      if (queryParams.colors && queryParams.colors.length > 0) {
-        queryParams.colors.forEach(color => params.append('colors', color))
-      }
-      
-      if (queryParams.minPrice) params.append('minPrice', queryParams.minPrice)
-      if (queryParams.maxPrice) params.append('maxPrice', queryParams.maxPrice)
-      if (queryParams.page) params.append('page', queryParams.page)
-      if (queryParams.limit) params.append('limit', queryParams.limit)
-      if (queryParams.sortBy) params.append('sortBy', queryParams.sortBy)
-      if (queryParams.sortOrder) params.append('sortOrder', queryParams.sortOrder)
+      // Manejar casos especiales para "new" y "discount"
+      if (id === 'new') {
+        url = '/api/products/nuevo'
+        // Para productos nuevos, crear una categoría ficticia
+        category.value = {
+          id: 'new',
+          name: 'Lo Nuevo',
+          description: 'Los últimos productos agregados',
+          type: 'special'
+        }
+      } else if (id === 'discount') {
+        url = '/api/products/rebajas'
+        // Para productos con descuento, crear una categoría ficticia
+        category.value = {
+          id: 'discount',
+          name: 'Descuentos',
+          description: 'Productos con descuentos especiales',
+          type: 'special'
+        }
+      } else {
+        // Caso normal de categoría por ID
+        const params = new URLSearchParams()
+        
+        if (queryParams.sizes && queryParams.sizes.length > 0) {
+          queryParams.sizes.forEach(size => params.append('sizes', size))
+        }
+        
+        if (queryParams.colors && queryParams.colors.length > 0) {
+          queryParams.colors.forEach(color => params.append('colors', color))
+        }
+        
+        if (queryParams.minPrice) params.append('minPrice', queryParams.minPrice)
+        if (queryParams.maxPrice) params.append('maxPrice', queryParams.maxPrice)
+        if (queryParams.page) params.append('page', queryParams.page)
+        if (queryParams.limit) params.append('limit', queryParams.limit)
+        if (queryParams.sortBy) params.append('sortBy', queryParams.sortBy)
+        if (queryParams.sortOrder) params.append('sortOrder', queryParams.sortOrder)
 
-      const queryString = params.toString()
-      const url = `/api/categories/${id}${queryString ? `?${queryString}` : ''}`
+        const queryString = params.toString()
+        url = `/api/categories/${id}${queryString ? `?${queryString}` : ''}`
+      }
       
       const { data, error: fetchError } = await useApi(url, 'GET')
       
       if (fetchError.value) {
         error.value = fetchError.value
       } else if (data.value && data.value.success) {
-        category.value = data.value.data.category
-        products.value = data.value.data.category.products || []
-        pagination.value = data.value.data.pagination
-        filters.value = data.value.data.filters
+        if (id === 'new' || id === 'discount') {
+          // Para casos especiales, los productos vienen directamente
+          products.value = data.value.data.products || []
+          // No hay paginación ni filtros para productos especiales
+          pagination.value = null
+          filters.value = { availableSizes: [], availableColors: [] }
+        } else {
+          // Caso normal de categoría
+          category.value = data.value.data.category
+          products.value = data.value.data.category.products || []
+          pagination.value = data.value.data.pagination
+          filters.value = data.value.data.filters
+        }
       }
     } catch (err) {
-      error.value = 'Error al cargar los productos de la categoría'
+      error.value = 'Error al cargar los productos'
     } finally {
       loading.value = false
     }
@@ -84,26 +116,41 @@ export function useCategoryProducts(categoryId) {
     return '/img/buzosMuestra.jpg'
   }
 
-  const applyFilters = async (newFilters) => {
+  const applyFilters = async (newFilters, currentCategoryId) => {
+    // Los filtros no se aplican a productos especiales (new/discount)
+    if (category.value?.type === 'special') {
+      return
+    }
+    
     appliedFilters.value = { ...appliedFilters.value, ...newFilters }
-    await fetchCategoryProducts(categoryId, { 
+    await fetchCategoryProducts(currentCategoryId, { 
       ...appliedFilters.value, 
       page: 1 
     })
   }
 
-  const clearFilters = async () => {
+  const clearFilters = async (currentCategoryId) => {
+    // Los filtros no se aplican a productos especiales (new/discount)
+    if (category.value?.type === 'special') {
+      return
+    }
+    
     appliedFilters.value = {
       sizes: [],
       colors: [],
       minPrice: null,
       maxPrice: null
     }
-    await fetchCategoryProducts(categoryId, { page: 1 })
+    await fetchCategoryProducts(currentCategoryId, { page: 1 })
   }
 
-  const changePage = async (page) => {
-    await fetchCategoryProducts(categoryId, { 
+  const changePage = async (page, currentCategoryId) => {
+    // La paginación no se aplica a productos especiales (new/discount)
+    if (category.value?.type === 'special') {
+      return
+    }
+    
+    await fetchCategoryProducts(currentCategoryId, { 
       ...appliedFilters.value, 
       page 
     })

@@ -4,6 +4,14 @@ import { useRoute } from 'vue-router'
 import { useCategoryProducts } from '@/js/composables/useCategoryProducts.js'
 import { useModal } from '@/js/composables/useModal.js'
 
+// Definir props para recibir el ID
+const props = defineProps({
+  id: {
+    type: String,
+    required: true
+  }
+})
+
 const route = useRoute()
 const { 
   category, 
@@ -33,11 +41,11 @@ const minPrice = ref('')
 const maxPrice = ref('')
 
 onMounted(() => {
-  fetchCategoryProducts(route.params.id)
+  fetchCategoryProducts(props.id)
 })
 
-// Observar cambios en la ruta para recargar datos
-watch(() => route.params.id, (newId) => {
+// Observar cambios en el prop id para recargar datos
+watch(() => props.id, (newId) => {
   if (newId) {
     resetFilters()
     fetchCategoryProducts(newId)
@@ -58,13 +66,13 @@ const handleApplyFilters = async () => {
     minPrice: minPrice.value || null,
     maxPrice: maxPrice.value || null
   }
-  await applyFilters(filterParams)
+  await applyFilters(filterParams, props.id)
   cerrarVentana()
 }
 
 const handleClearFilters = async () => {
   resetFilters()
-  await clearFilters()
+  await clearFilters(props.id)
   cerrarVentana()
 }
 
@@ -95,8 +103,8 @@ const toggleColor = (colorId) => {
     
     <p v-if="categoryDescription" class="categoryDescription">{{ categoryDescription }}</p>
     
-    <!-- Botón de filtros para móvil y tablet -->
-    <div class="filterButtonContainer mobile-tablet-only">
+    <!-- Botón de filtros para móvil y tablet (solo para categorías normales) -->
+    <div v-if="category?.type !== 'special'" class="filterButtonContainer mobile-tablet-only">
       <button @click="abrirVentana" class="filterButton">
         <span>Filtrar</span>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -114,8 +122,8 @@ const toggleColor = (colorId) => {
     </div>
     
     <div v-else class="contentContainer">
-      <!-- Sidebar de filtros para desktop -->
-      <aside class="filterSidebar desktop-only">
+      <!-- Sidebar de filtros para desktop (solo para categorías normales) -->
+      <aside v-if="category?.type !== 'special'" class="filterSidebar desktop-only">
         <div class="filterSection">
           <h5>Filtros</h5>
           
@@ -220,12 +228,12 @@ const toggleColor = (colorId) => {
             </RouterLink>
           </div>
           
-          <!-- Paginación -->
-          <div v-if="pagination && pagination.totalPages > 1" class="pagination">
+          <!-- Paginación (solo para categorías normales) -->
+          <div v-if="pagination && pagination.totalPages > 1 && category?.type !== 'special'" class="pagination">
             <button 
               v-for="page in pagination.totalPages" 
               :key="page"
-              @click="changePage(page)"
+              @click="changePage(page, props.id)"
               class="pageButton"
               :class="{ active: page === pagination.currentPage }"
             >
@@ -236,8 +244,8 @@ const toggleColor = (colorId) => {
       </main>
     </div>
     
-    <!-- Modal de filtros para móvil y tablet -->
-    <div v-if="isModalOpen" class="filterModal mobile-tablet-only">
+    <!-- Modal de filtros para móvil y tablet (solo para categorías normales) -->
+    <div v-if="isModalOpen && category?.type !== 'special'" class="filterModal mobile-tablet-only">
       <div class="modalOverlay" @click="cerrarVentana"></div>
       <div class="modalContent">
         <div class="modalHeader">
@@ -518,6 +526,13 @@ const toggleColor = (colorId) => {
   display: flex;
   flex-direction: row;
   justify-content: center;
+}
+
+/* Ajustar el contenido cuando no hay sidebar */
+.contentContainer:not(:has(.filterSidebar)) .mainContent {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 /* Filter modal for mobile/tablet */
