@@ -736,8 +736,48 @@ export const deleteProduct = async (req, res) => {
 
 export const getNewProducts = async (req, res) => {
   try {
-    const products = await Product.findAll({
-      where: { is_active: true },
+    const {
+      page = 1,
+      limit = 12,
+      search,
+      minPrice,
+      maxPrice,
+      sizes,
+      colors,
+      sortBy = 'created_at',
+      sortOrder = 'DESC'
+    } = req.query;
+
+    const offset = (page - 1) * limit;
+    const where = { is_active: true };
+
+    // Aplicar filtros
+    if (search) {
+      where[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { description: { [Op.like]: `%${search}%` } }
+      ];
+    }
+
+    if (minPrice || maxPrice) {
+      where.price = {};
+      if (minPrice) where.price[Op.gte] = minPrice;
+      if (maxPrice) where.price[Op.lte] = maxPrice;
+    }
+
+    // Construir include con filtros de variantes
+    const variantWhere = {};
+    if (sizes) {
+      const sizeArray = Array.isArray(sizes) ? sizes : [sizes];
+      variantWhere.size_id = { [Op.in]: sizeArray };
+    }
+    if (colors) {
+      const colorArray = Array.isArray(colors) ? colors : [colors];
+      variantWhere.color_id = { [Op.in]: colorArray };
+    }
+
+    const { count, rows: products } = await Product.findAndCountAll({
+      where,
       include: [
         {
           model: Category,
@@ -747,6 +787,8 @@ export const getNewProducts = async (req, res) => {
         {
           model: ProductVariant,
           as: 'variants',
+          where: Object.keys(variantWhere).length > 0 ? variantWhere : undefined,
+          required: Object.keys(variantWhere).length > 0,
           include: [
             { model: Size, as: 'size', attributes: ['id', 'name'] },
             { model: Color, as: 'color', attributes: ['id', 'name', 'hex_code'] }
@@ -760,13 +802,62 @@ export const getNewProducts = async (req, res) => {
           ]
         }
       ],
-      order: [['created_at', 'DESC']],
-      limit: 10
+      order: [[sortBy, sortOrder.toUpperCase()]],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      distinct: true
+    });
+
+    const totalPages = Math.ceil(count / limit);
+
+    // Obtener filtros disponibles
+    const availableSizes = await Size.findAll({
+      include: [{
+        model: ProductVariant,
+        as: 'productVariants',
+        include: [{
+          model: Product,
+          as: 'product',
+          where: { is_active: true },
+          attributes: []
+        }],
+        attributes: []
+      }],
+      attributes: ['id', 'name'],
+      group: ['Size.id']
+    });
+
+    const availableColors = await Color.findAll({
+      include: [{
+        model: ProductVariant,
+        as: 'productVariants',
+        include: [{
+          model: Product,
+          as: 'product',
+          where: { is_active: true },
+          attributes: []
+        }],
+        attributes: []
+      }],
+      attributes: ['id', 'name', 'hex_code'],
+      group: ['Color.id']
     });
 
     res.json({
       success: true,
-      data: { products }
+      data: {
+        products,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages,
+          totalItems: count,
+          itemsPerPage: parseInt(limit)
+        },
+        filters: {
+          availableSizes,
+          availableColors
+        }
+      }
     });
   } catch (error) {
     console.error('Error obteniendo productos nuevos:', error);
@@ -779,11 +870,51 @@ export const getNewProducts = async (req, res) => {
 
 export const getSaleProducts = async (req, res) => {
   try {
-    const products = await Product.findAll({
-      where: { 
-        is_active: true,
-        discount_percentage: { [Op.gt]: 0 }
-      },
+    const {
+      page = 1,
+      limit = 12,
+      search,
+      minPrice,
+      maxPrice,
+      sizes,
+      colors,
+      sortBy = 'discount_percentage',
+      sortOrder = 'DESC'
+    } = req.query;
+
+    const offset = (page - 1) * limit;
+    const where = { 
+      is_active: true,
+      discount_percentage: { [Op.gt]: 0 }
+    };
+
+    // Aplicar filtros
+    if (search) {
+      where[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { description: { [Op.like]: `%${search}%` } }
+      ];
+    }
+
+    if (minPrice || maxPrice) {
+      where.price = {};
+      if (minPrice) where.price[Op.gte] = minPrice;
+      if (maxPrice) where.price[Op.lte] = maxPrice;
+    }
+
+    // Construir include con filtros de variantes
+    const variantWhere = {};
+    if (sizes) {
+      const sizeArray = Array.isArray(sizes) ? sizes : [sizes];
+      variantWhere.size_id = { [Op.in]: sizeArray };
+    }
+    if (colors) {
+      const colorArray = Array.isArray(colors) ? colors : [colors];
+      variantWhere.color_id = { [Op.in]: colorArray };
+    }
+
+    const { count, rows: products } = await Product.findAndCountAll({
+      where,
       include: [
         {
           model: Category,
@@ -793,6 +924,8 @@ export const getSaleProducts = async (req, res) => {
         {
           model: ProductVariant,
           as: 'variants',
+          where: Object.keys(variantWhere).length > 0 ? variantWhere : undefined,
+          required: Object.keys(variantWhere).length > 0,
           include: [
             { model: Size, as: 'size', attributes: ['id', 'name'] },
             { model: Color, as: 'color', attributes: ['id', 'name', 'hex_code'] }
@@ -806,12 +939,68 @@ export const getSaleProducts = async (req, res) => {
           ]
         }
       ],
-      order: [['discount_percentage', 'DESC']]
+      order: [[sortBy, sortOrder.toUpperCase()]],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      distinct: true
+    });
+
+    const totalPages = Math.ceil(count / limit);
+
+    // Obtener filtros disponibles (solo para productos con descuento)
+    const availableSizes = await Size.findAll({
+      include: [{
+        model: ProductVariant,
+        as: 'productVariants',
+        include: [{
+          model: Product,
+          as: 'product',
+          where: { 
+            is_active: true,
+            discount_percentage: { [Op.gt]: 0 }
+          },
+          attributes: []
+        }],
+        attributes: []
+      }],
+      attributes: ['id', 'name'],
+      group: ['Size.id']
+    });
+
+    const availableColors = await Color.findAll({
+      include: [{
+        model: ProductVariant,
+        as: 'productVariants',
+        include: [{
+          model: Product,
+          as: 'product',
+          where: { 
+            is_active: true,
+            discount_percentage: { [Op.gt]: 0 }
+          },
+          attributes: []
+        }],
+        attributes: []
+      }],
+      attributes: ['id', 'name', 'hex_code'],
+      group: ['Color.id']
     });
 
     res.json({
       success: true,
-      data: { products }
+      data: {
+        products,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages,
+          totalItems: count,
+          itemsPerPage: parseInt(limit)
+        },
+        filters: {
+          availableSizes,
+          availableColors
+        }
+      }
     });
   } catch (error) {
     console.error('Error obteniendo productos en rebaja:', error);

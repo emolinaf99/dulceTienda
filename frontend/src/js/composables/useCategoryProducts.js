@@ -29,7 +29,6 @@ export function useCategoryProducts() {
       
       // Manejar casos especiales para "new" y "discount"
       if (id === 'new') {
-        url = '/api/products/nuevo'
         // Para productos nuevos, crear una categoría ficticia
         category.value = {
           id: 'new',
@@ -37,8 +36,28 @@ export function useCategoryProducts() {
           description: 'Los últimos productos agregados',
           type: 'special'
         }
+        
+        // Construir query string para productos nuevos
+        const params = new URLSearchParams()
+        
+        if (queryParams.sizes && queryParams.sizes.length > 0) {
+          queryParams.sizes.forEach(size => params.append('sizes', size))
+        }
+        
+        if (queryParams.colors && queryParams.colors.length > 0) {
+          queryParams.colors.forEach(color => params.append('colors', color))
+        }
+        
+        if (queryParams.minPrice) params.append('minPrice', queryParams.minPrice)
+        if (queryParams.maxPrice) params.append('maxPrice', queryParams.maxPrice)
+        if (queryParams.page) params.append('page', queryParams.page)
+        if (queryParams.limit) params.append('limit', queryParams.limit)
+        if (queryParams.sortBy) params.append('sortBy', queryParams.sortBy)
+        if (queryParams.sortOrder) params.append('sortOrder', queryParams.sortOrder)
+
+        const queryString = params.toString()
+        url = `/api/products/nuevo${queryString ? `?${queryString}` : ''}`
       } else if (id === 'discount') {
-        url = '/api/products/rebajas'
         // Para productos con descuento, crear una categoría ficticia
         category.value = {
           id: 'discount',
@@ -46,6 +65,27 @@ export function useCategoryProducts() {
           description: 'Productos con descuentos especiales',
           type: 'special'
         }
+        
+        // Construir query string para productos con descuento
+        const params = new URLSearchParams()
+        
+        if (queryParams.sizes && queryParams.sizes.length > 0) {
+          queryParams.sizes.forEach(size => params.append('sizes', size))
+        }
+        
+        if (queryParams.colors && queryParams.colors.length > 0) {
+          queryParams.colors.forEach(color => params.append('colors', color))
+        }
+        
+        if (queryParams.minPrice) params.append('minPrice', queryParams.minPrice)
+        if (queryParams.maxPrice) params.append('maxPrice', queryParams.maxPrice)
+        if (queryParams.page) params.append('page', queryParams.page)
+        if (queryParams.limit) params.append('limit', queryParams.limit)
+        if (queryParams.sortBy) params.append('sortBy', queryParams.sortBy)
+        if (queryParams.sortOrder) params.append('sortOrder', queryParams.sortOrder)
+
+        const queryString = params.toString()
+        url = `/api/products/rebajas${queryString ? `?${queryString}` : ''}`
       } else {
         // Caso normal de categoría por ID
         const params = new URLSearchParams()
@@ -75,11 +115,10 @@ export function useCategoryProducts() {
         error.value = fetchError.value
       } else if (data.value && data.value.success) {
         if (id === 'new' || id === 'discount') {
-          // Para casos especiales, los productos vienen directamente
+          // Para casos especiales, ahora también tienen paginación y filtros
           products.value = data.value.data.products || []
-          // No hay paginación ni filtros para productos especiales
-          pagination.value = null
-          filters.value = { availableSizes: [], availableColors: [] }
+          pagination.value = data.value.data.pagination || null
+          filters.value = data.value.data.filters || { availableSizes: [], availableColors: [] }
         } else {
           // Caso normal de categoría
           category.value = data.value.data.category
@@ -117,11 +156,6 @@ export function useCategoryProducts() {
   }
 
   const applyFilters = async (newFilters, currentCategoryId) => {
-    // Los filtros no se aplican a productos especiales (new/discount)
-    if (category.value?.type === 'special') {
-      return
-    }
-    
     appliedFilters.value = { ...appliedFilters.value, ...newFilters }
     await fetchCategoryProducts(currentCategoryId, { 
       ...appliedFilters.value, 
@@ -130,11 +164,6 @@ export function useCategoryProducts() {
   }
 
   const clearFilters = async (currentCategoryId) => {
-    // Los filtros no se aplican a productos especiales (new/discount)
-    if (category.value?.type === 'special') {
-      return
-    }
-    
     appliedFilters.value = {
       sizes: [],
       colors: [],
@@ -145,11 +174,6 @@ export function useCategoryProducts() {
   }
 
   const changePage = async (page, currentCategoryId) => {
-    // La paginación no se aplica a productos especiales (new/discount)
-    if (category.value?.type === 'special') {
-      return
-    }
-    
     await fetchCategoryProducts(currentCategoryId, { 
       ...appliedFilters.value, 
       page 

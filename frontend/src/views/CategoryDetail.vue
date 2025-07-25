@@ -103,8 +103,8 @@ const toggleColor = (colorId) => {
     
     <p v-if="categoryDescription" class="categoryDescription">{{ categoryDescription }}</p>
     
-    <!-- Botón de filtros para móvil y tablet (solo para categorías normales) -->
-    <div v-if="category?.type !== 'special'" class="filterButtonContainer mobile-tablet-only">
+    <!-- Botón de filtros para móvil y tablet -->
+    <div class="filterButtonContainer mobile-tablet-only">
       <button @click="abrirVentana" class="filterButton">
         <span>Filtrar</span>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -122,8 +122,8 @@ const toggleColor = (colorId) => {
     </div>
     
     <div v-else class="contentContainer">
-      <!-- Sidebar de filtros para desktop (solo para categorías normales) -->
-      <aside v-if="category?.type !== 'special'" class="filterSidebar desktop-only">
+      <!-- Sidebar de filtros para desktop -->
+      <aside class="filterSidebar desktop-only">
         <div class="filterSection">
           <h5>Filtros</h5>
           
@@ -228,8 +228,8 @@ const toggleColor = (colorId) => {
             </RouterLink>
           </div>
           
-          <!-- Paginación (solo para categorías normales) -->
-          <div v-if="pagination && pagination.totalPages > 1 && category?.type !== 'special'" class="pagination">
+          <!-- Paginación -->
+          <div v-if="pagination && pagination.totalPages > 1" class="pagination">
             <button 
               v-for="page in pagination.totalPages" 
               :key="page"
@@ -244,8 +244,8 @@ const toggleColor = (colorId) => {
       </main>
     </div>
     
-    <!-- Modal de filtros para móvil y tablet (solo para categorías normales) -->
-    <div v-if="isModalOpen && category?.type !== 'special'" class="filterModal mobile-tablet-only">
+    <!-- Modal de filtros para móvil y tablet -->
+    <div v-if="isModalOpen" class="filterModal mobile-tablet-only">
       <div class="modalOverlay" @click="cerrarVentana"></div>
       <div class="modalContent">
         <div class="modalHeader">
