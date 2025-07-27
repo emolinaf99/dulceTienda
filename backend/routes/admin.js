@@ -13,7 +13,12 @@ import {
   deleteCategory,
   createTypeSize,
   updateTypeSize,
-  updateSize
+  updateSize,
+  getBanner,
+  uploadBanner,
+  bannerUploadMiddleware,
+  getAboutUs,
+  updateAboutUs
 } from '../controllers/adminController.js';
 import { adminOnly } from '../middleware/adminAuth.js';
 
@@ -45,5 +50,13 @@ router.get('/type-sizes', getAdminTypeSizes);
 router.post('/type-sizes', createTypeSize);
 router.put('/type-sizes/:id', updateTypeSize);
 router.get('/colors', getAdminColors);
+
+// Banner management
+router.get('/banner', getBanner);
+router.post('/banner', bannerUploadMiddleware, uploadBanner);
+
+// About Us management
+router.get('/about-us', getAboutUs);
+router.post('/about-us', updateAboutUs);
 
 export default router;

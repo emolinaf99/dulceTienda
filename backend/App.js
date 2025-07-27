@@ -22,6 +22,9 @@ import adminRoutes from './routes/admin.js';
 // Importar controlador de correos
 import { enviarCorreoContacto } from './controllers/emailController.js';
 
+// Importar funciones públicas
+import { getBannerPublic, getAboutUsPublic } from './controllers/adminController.js';
+
 // Importar inicialización de base de datos
 import { initializeDatabase } from './database/init.js';
 
@@ -85,6 +88,10 @@ app.use('/api/sizes', sizeRoutes);
 app.use('/api/colors', colorRoutes);
 app.use('/api/type-sizes', typeSizeRoutes);
 app.use('/api/admin', adminRoutes);
+
+// Rutas públicas
+app.get('/api/banner', getBannerPublic);
+app.get('/api/about-us', getAboutUsPublic);
 
 // Ruta para envío de correos de contacto
 app.post('/api/enviarCorreo', enviarCorreoContacto);

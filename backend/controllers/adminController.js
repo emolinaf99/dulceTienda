@@ -1,6 +1,13 @@
 import { Product, Category, User, Size, Color, Order, TypeSize, ProductVariant, ImgColorProduct } from '../models/associations.js';
 import { validationResult } from 'express-validator';
 import { Op } from 'sequelize';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Dashboard stats
 export const getDashboardStats = async (req, res) => {
@@ -740,6 +747,300 @@ export const updateSize = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error al actualizar talla'
+    });
+  }
+};
+
+// Configuración de multer para banner
+const bannerStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = path.join(__dirname, '../public/uploads/banner');
+    
+    // Crear directorio si no existe
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    // Mantener siempre el mismo nombre para el banner
+    const extension = path.extname(file.originalname);
+    cb(null, `banner${extension}`);
+  }
+});
+
+const bannerUpload = multer({
+  storage: bannerStorage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten archivos JPEG, PNG o WebP'), false);
+    }
+  }
+});
+
+// Obtener banner actual (público)
+export const getBannerPublic = async (req, res) => {
+  try {
+    const bannerDir = path.join(__dirname, '../public/uploads/banner');
+    
+    // Verificar si el directorio existe
+    if (!fs.existsSync(bannerDir)) {
+      return res.json({
+        success: true,
+        banner: null
+      });
+    }
+    
+    // Buscar archivo de banner existente
+    const files = fs.readdirSync(bannerDir).filter(file => 
+      file.startsWith('banner.') && 
+      (file.endsWith('.jpg') || file.endsWith('.jpeg') || file.endsWith('.png') || file.endsWith('.webp'))
+    );
+    
+    if (files.length > 0) {
+      const bannerFile = files[0];
+      const bannerUrl = `/uploads/banner/${bannerFile}`;
+      
+      res.json({
+        success: true,
+        banner: bannerUrl
+      });
+    } else {
+      res.json({
+        success: true,
+        banner: null
+      });
+    }
+  } catch (error) {
+    console.error('Error getting banner:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener el banner'
+    });
+  }
+};
+
+// Obtener banner actual (admin)
+export const getBanner = async (req, res) => {
+  try {
+    const bannerDir = path.join(__dirname, '../public/uploads/banner');
+    
+    // Verificar si el directorio existe
+    if (!fs.existsSync(bannerDir)) {
+      return res.json({
+        success: true,
+        banner: null
+      });
+    }
+    
+    // Buscar archivo de banner existente
+    const files = fs.readdirSync(bannerDir).filter(file => 
+      file.startsWith('banner.') && 
+      (file.endsWith('.jpg') || file.endsWith('.jpeg') || file.endsWith('.png') || file.endsWith('.webp'))
+    );
+    
+    if (files.length > 0) {
+      const bannerFile = files[0];
+      const bannerUrl = `/uploads/banner/${bannerFile}`;
+      
+      res.json({
+        success: true,
+        banner: bannerUrl
+      });
+    } else {
+      res.json({
+        success: true,
+        banner: null
+      });
+    }
+  } catch (error) {
+    console.error('Error getting banner:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener el banner'
+    });
+  }
+};
+
+// Subir nuevo banner
+export const uploadBanner = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No se ha subido ningún archivo'
+      });
+    }
+
+    // Eliminar banners anteriores
+    const bannerDir = path.join(__dirname, '../public/uploads/banner');
+    const existingFiles = fs.readdirSync(bannerDir).filter(file => 
+      file.startsWith('banner.') && file !== req.file.filename
+    );
+    
+    existingFiles.forEach(file => {
+      const filePath = path.join(bannerDir, file);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    });
+
+    const bannerUrl = `/uploads/banner/${req.file.filename}`;
+    
+    res.json({
+      success: true,
+      message: 'Banner actualizado exitosamente',
+      banner: bannerUrl
+    });
+  } catch (error) {
+    console.error('Error uploading banner:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al subir el banner'
+    });
+  }
+};
+
+// Middleware de multer para banner
+export const bannerUploadMiddleware = bannerUpload.single('banner');
+
+// Gestión del contenido "Quienes Somos"
+const aboutUsFilePath = path.join(__dirname, '../public/content/about-us.json');
+
+// Obtener contenido de "Quienes Somos" (público)
+export const getAboutUsPublic = async (req, res) => {
+  try {
+    // Verificar si el directorio de contenido existe
+    const contentDir = path.dirname(aboutUsFilePath);
+    if (!fs.existsSync(contentDir)) {
+      fs.mkdirSync(contentDir, { recursive: true });
+    }
+    
+    // Verificar si el archivo existe
+    if (fs.existsSync(aboutUsFilePath)) {
+      const content = JSON.parse(fs.readFileSync(aboutUsFilePath, 'utf8'));
+      res.json({
+        success: true,
+        content
+      });
+    } else {
+      // Retornar contenido por defecto si no existe
+      const defaultContent = {
+        title: 'Dulce Basicas',
+        content: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry\'s standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged.\n\nIt was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.'
+      };
+      res.json({
+        success: true,
+        content: defaultContent
+      });
+    }
+  } catch (error) {
+    console.error('Error getting about us content:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener el contenido'
+    });
+  }
+};
+
+// Obtener contenido de "Quienes Somos" (admin)
+export const getAboutUs = async (req, res) => {
+  try {
+    // Verificar si el directorio de contenido existe
+    const contentDir = path.dirname(aboutUsFilePath);
+    if (!fs.existsSync(contentDir)) {
+      fs.mkdirSync(contentDir, { recursive: true });
+    }
+    
+    // Verificar si el archivo existe
+    if (fs.existsSync(aboutUsFilePath)) {
+      const content = JSON.parse(fs.readFileSync(aboutUsFilePath, 'utf8'));
+      res.json({
+        success: true,
+        content
+      });
+    } else {
+      // Retornar contenido por defecto si no existe
+      const defaultContent = {
+        title: 'Dulce Basicas',
+        content: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry\'s standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged.\n\nIt was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.'
+      };
+      res.json({
+        success: true,
+        content: defaultContent
+      });
+    }
+  } catch (error) {
+    console.error('Error getting about us content:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener el contenido'
+    });
+  }
+};
+
+// Actualizar contenido de "Quienes Somos"
+export const updateAboutUs = async (req, res) => {
+  try {
+    const { title, content } = req.body;
+
+    // Validar datos requeridos
+    if (!title || !content) {
+      return res.status(400).json({
+        success: false,
+        message: 'El título y contenido son requeridos'
+      });
+    }
+
+    // Validar longitud
+    if (title.length > 100) {
+      return res.status(400).json({
+        success: false,
+        message: 'El título no puede tener más de 100 caracteres'
+      });
+    }
+
+    if (content.length > 2000) {
+      return res.status(400).json({
+        success: false,
+        message: 'El contenido no puede tener más de 2000 caracteres'
+      });
+    }
+
+    // Sanitizar contenido (básico)
+    const sanitizedContent = {
+      title: title.trim(),
+      content: content.trim(),
+      updatedAt: new Date().toISOString(),
+      updatedBy: req.user ? req.user.id : null
+    };
+
+    // Verificar si el directorio de contenido existe
+    const contentDir = path.dirname(aboutUsFilePath);
+    if (!fs.existsSync(contentDir)) {
+      fs.mkdirSync(contentDir, { recursive: true });
+    }
+
+    // Guardar contenido en archivo JSON
+    fs.writeFileSync(aboutUsFilePath, JSON.stringify(sanitizedContent, null, 2), 'utf8');
+
+    res.json({
+      success: true,
+      message: 'Contenido actualizado exitosamente',
+      content: sanitizedContent
+    });
+  } catch (error) {
+    console.error('Error updating about us content:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al actualizar el contenido'
     });
   }
 };

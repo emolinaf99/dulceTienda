@@ -9,6 +9,8 @@ import AdminProducts from '@/components/admin/AdminProducts.vue';
 import AdminCategories from '@/components/admin/AdminCategories.vue';
 import AdminUsers from '@/components/admin/AdminUsers.vue';
 import AdminSizesColors from '@/components/admin/AdminSizesColors.vue';
+import AdminBanner from '@/components/admin/AdminBanner.vue';
+import AdminAboutUs from '@/components/admin/AdminAboutUs.vue';
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -48,6 +50,16 @@ const navItems = [
     id: 'sizes-colors',
     label: 'Tallas y Colores',
     icon: 'fa-palette'
+  },
+  {
+    id: 'banner',
+    label: 'Banner Principal',
+    icon: 'fa-image'
+  },
+  {
+    id: 'about-us',
+    label: 'Quienes Somos',
+    icon: 'fa-info-circle'
   }
 ];
 
@@ -180,6 +192,8 @@ onBeforeUnmount(() => {
       <AdminCategories v-if="activeSection === 'categories'" />
       <AdminUsers v-if="activeSection === 'users'" />
       <AdminSizesColors v-if="activeSection === 'sizes-colors'" />
+      <AdminBanner v-if="activeSection === 'banner'" />
+      <AdminAboutUs v-if="activeSection === 'about-us'" />
     </main>
 
   </div>
