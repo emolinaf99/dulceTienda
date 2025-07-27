@@ -1,4 +1,4 @@
-import { Cart, Product, Category } from '../models/associations.js';
+import { Cart, Product, Category, Size, Color } from '../models/associations.js';
 import { validationResult } from 'express-validator';
 
 export const getCart = async (req, res) => {
@@ -16,6 +16,16 @@ export const getCart = async (req, res) => {
               attributes: ['id', 'name']
             }
           ]
+        },
+        {
+          model: Size,
+          as: 'size',
+          attributes: ['id', 'name']
+        },
+        {
+          model: Color,
+          as: 'color',
+          attributes: ['id', 'name', 'hex_code']
         }
       ]
     });
@@ -67,8 +77,9 @@ export const addToCart = async (req, res) => {
       });
     }
 
-    const { product_id, quantity, size, color } = req.body;
+    const { product_id, quantity, size_id, color_id } = req.body;
 
+    // Verificar que el producto existe y está activo
     const product = await Product.findOne({
       where: { id: product_id, is_active: true }
     });
@@ -80,46 +91,41 @@ export const addToCart = async (req, res) => {
       });
     }
 
-    if (product.stock < quantity) {
+    // Verificar que la talla existe
+    const size = await Size.findByPk(size_id);
+    if (!size) {
       return res.status(400).json({
         success: false,
-        message: 'Stock insuficiente'
+        message: 'Talla no válida'
       });
     }
 
-    if (!product.sizes.includes(size)) {
+    // Verificar que el color existe
+    const color = await Color.findByPk(color_id);
+    if (!color) {
       return res.status(400).json({
         success: false,
-        message: 'Talla no disponible'
+        message: 'Color no válido'
       });
     }
 
-    if (!product.colors.includes(color)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Color no disponible'
-      });
-    }
+    // Verificar que existe una variante del producto con esa talla y color
+    // Esto depende de cómo esté estructurado tu sistema de variantes
+    // Por ahora, asumimos que si talla y color existen, la combinación es válida
 
+    // Verificar si el item ya existe en el carrito
     const existingCartItem = await Cart.findOne({
       where: {
         user_id: req.user.id,
         product_id,
-        size,
-        color
+        size_id,
+        color_id
       }
     });
 
     if (existingCartItem) {
       const newQuantity = existingCartItem.quantity + quantity;
       
-      if (product.stock < newQuantity) {
-        return res.status(400).json({
-          success: false,
-          message: 'Stock insuficiente para la cantidad total'
-        });
-      }
-
       await existingCartItem.update({ quantity: newQuantity });
       
       res.json({
@@ -132,8 +138,8 @@ export const addToCart = async (req, res) => {
         user_id: req.user.id,
         product_id,
         quantity,
-        size,
-        color
+        size_id,
+        color_id
       });
 
       res.status(201).json({

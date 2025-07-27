@@ -3,8 +3,10 @@
     import Nuevo from '../components/Nuevo.vue'
     import { useProducts } from '../js/composables/useProducts.js'
     import { useFavorites } from '../js/composables/useFavorites.js'
+    import { useCart } from '../js/composables/useCart.js'
     import { useUserStore } from '../js/stores/userLogged.js'
     import { checkOverflow } from '../js/overflow.js'
+    import mostrarNotificacion from '../js/mensajeNotificacionFront.js'
 
     const props = defineProps({
         id: String
@@ -13,6 +15,16 @@
     // Composables
     const { loading, error, getProductById, getImagesByColor, getAvailableColors, getAvailableSizes, getVariantStock } = useProducts();
     const { loading: favLoading, error: favError, isProductInFavorites, toggleFavorite } = useFavorites();
+    const { 
+        loading: cartLoading, 
+        addToCart, 
+        updateCartItem, 
+        removeFromCart, 
+        loadCart,
+        isProductInCart, 
+        getProductQuantityInCart, 
+        getCartItemId 
+    } = useCart();
     const userStore = useUserStore();
 
     // Estado reactivo
@@ -22,6 +34,8 @@
     const quantity = ref(1);
     const selectedImageIndex = ref(0);
     const isFavorite = ref(false);
+    const cartQuantity = ref(0); // Cantidad actual en el carrito
+    const cartItemId = ref(null); // ID del item en el carrito
 
     // Refs for DOM elements
     const mainImageContainerRef = ref(null);
@@ -39,7 +53,14 @@
     });
 
     const currentImages = computed(() => {
-        if (!product.value || !selectedColor.value) return [];
+        if (!product.value) return [];
+        
+        if (!selectedColor.value) {
+            // Si no hay color seleccionado, mostrar todas las imágenes disponibles
+            const allImages = getAllAvailableImages();
+            return allImages.map(img => img.url);
+        }
+        
         return getImagesByColor(product.value, selectedColor.value.id);
     });
 
@@ -74,6 +95,24 @@
         return getVariantStock(product.value, selectedSize.value.id, selectedColor.value.id);
     });
 
+    // Verificar si el producto está en el carrito
+    const isCurrentVariantInCart = computed(() => {
+        if (!props.id || !selectedSize.value || !selectedColor.value) return false;
+        return !!isProductInCart(props.id, selectedSize.value.id, selectedColor.value.id);
+    });
+
+    // Obtener cantidad actual en el carrito para la variante seleccionada
+    const currentVariantQuantityInCart = computed(() => {
+        if (!props.id || !selectedSize.value || !selectedColor.value) return 0;
+        return getProductQuantityInCart(props.id, selectedSize.value.id, selectedColor.value.id);
+    });
+
+    // Obtener ID del item en el carrito para la variante seleccionada
+    const currentVariantCartItemId = computed(() => {
+        if (!props.id || !selectedSize.value || !selectedColor.value) return null;
+        return getCartItemId(props.id, selectedSize.value.id, selectedColor.value.id);
+    });
+
     // Métodos
     const loadProduct = async () => {
         if (!props.id) {
@@ -86,11 +125,11 @@
             
             if (productData) {
                 product.value = productData;
-                const colors = getAvailableColors(productData);
                 
-                if (colors.length > 0) {
-                    selectColor(colors[0]);
-                }
+                // Usar detección automática de color en lugar de seleccionar manualmente el primero
+                nextTick(() => {
+                    detectAndSelectColorFromCurrentImage();
+                });
                 
                 // Verificar si el producto está en favoritos
                 await checkFavoriteStatus();
@@ -147,7 +186,200 @@
     const selectColor = (color) => {
         selectedColor.value = color;
         selectedSize.value = null; // Reset size when color changes
-        selectImage(0); // Reset to the first image of the new color
+        selectedImageIndex.value = 0; // Reset to the first image of the new color
+        
+        // Reinicializar el carrusel para el nuevo color
+        nextTick(() => {
+            initInfiniteCarousel();
+        });
+    };
+
+    // Función para detectar el color de una imagen específica
+    const getColorFromImage = (imageUrl) => {
+        if (!product.value || !product.value.colorImages || !imageUrl) return null;
+        
+        // Extraer el nombre del archivo de la URL
+        const imageName = imageUrl.split('/').pop();
+        
+        // Buscar en colorImages el color que corresponde a esta imagen
+        const colorImage = product.value.colorImages.find(img => 
+            img.img === imageName
+        );
+        
+        if (colorImage) {
+            // Buscar el color completo en las variantes
+            const variant = product.value.variants?.find(v => 
+                v.color_id === colorImage.color_id
+            );
+            return variant?.color || null;
+        }
+        
+        return null;
+    };
+
+    // Función para obtener todas las imágenes de todos los colores
+    const getAllAvailableImages = () => {
+        if (!product.value || !product.value.colorImages) return [];
+        
+        const allImages = [];
+        const availableColors = getAvailableColors(product.value);
+        
+        availableColors.forEach(color => {
+            const colorImages = getImagesByColor(product.value, color.id);
+            colorImages.forEach((imageUrl, index) => {
+                allImages.push({
+                    url: imageUrl,
+                    color: color,
+                    colorId: color.id,
+                    imageIndex: index,
+                    globalIndex: allImages.length // Índice global entre todas las imágenes
+                });
+            });
+        });
+        
+        return allImages;
+    };
+
+    // Función para detectar y seleccionar automáticamente el color basado en la imagen visible
+    const detectAndSelectColorFromCurrentImage = () => {
+        if (!product.value) return;
+        
+        const allImages = getAllAvailableImages();
+        if (allImages.length === 0) return;
+        
+        // Si no hay color seleccionado, seleccionar automáticamente el primer color disponible
+        if (!selectedColor.value) {
+            // Intentar detectar desde la primera imagen
+            const firstImageUrl = allImages[0]?.url;
+            if (firstImageUrl) {
+                const detectedColor = getColorFromImage(firstImageUrl);
+                if (detectedColor) {
+                    console.log('Auto-selecting detected color:', detectedColor.name);
+                    selectedColor.value = detectedColor;
+                    selectedImageIndex.value = 0;
+                    
+                    // Después de seleccionar el color, actualizar el carrusel
+                    nextTick(() => {
+                        initInfiniteCarousel();
+                    });
+                    return;
+                }
+            }
+            
+            // Fallback: usar el primer color disponible si no se puede detectar
+            const firstColor = allImages[0]?.color;
+            if (firstColor) {
+                console.log('Auto-selecting first available color:', firstColor.name);
+                selectedColor.value = firstColor;
+                selectedImageIndex.value = 0;
+                
+                // Después de seleccionar el color, actualizar el carrusel
+                nextTick(() => {
+                    initInfiniteCarousel();
+                });
+                return;
+            }
+        }
+        
+        // Si ya hay un color seleccionado, asegurar que las imágenes estén sincronizadas
+        return;
+    };
+
+    // Función mejorada para detectar color desde la imagen actual en el carrusel
+    const detectColorFromVisibleImage = (imageIndex = null) => {
+        if (!product.value) return;
+        
+        const allImages = getAllAvailableImages();
+        if (allImages.length === 0) return;
+        
+        let targetIndex = imageIndex;
+        
+        // Si no se proporciona un índice, detectar desde la posición del scroll
+        if (targetIndex === null) {
+            const container = mainImageContainerRef.value;
+            if (!container) return;
+            
+            const containerCenter = container.scrollLeft + container.clientWidth / 2;
+            const imageElements = Array.from(container.children).filter(c => c.tagName === 'IMG');
+            
+            let closestImageIndex = -1;
+            let minDistance = Infinity;
+            
+            imageElements.forEach((img, index) => {
+                const imgCenter = img.offsetLeft + img.offsetWidth / 2;
+                const distance = Math.abs(imgCenter - containerCenter);
+                
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestImageIndex = index;
+                }
+            });
+            
+            if (closestImageIndex !== -1) {
+                targetIndex = closestImageIndex % currentImages.value.length;
+            }
+        }
+        
+        // Si tenemos un índice válido, buscar el color correspondiente
+        if (targetIndex !== null && targetIndex >= 0) {
+            // Buscar en las imágenes actuales si hay un color seleccionado
+            if (selectedColor.value && currentImages.value.length > 0) {
+                // Ya hay un color seleccionado, no cambiar automáticamente
+                return;
+            }
+            
+            // Si no hay color seleccionado o estamos navegando por todas las imágenes
+            const currentImageUrl = currentImages.value[targetIndex];
+            if (currentImageUrl) {
+                // Detectar el color basado en la URL de la imagen
+                const detectedColor = getColorFromImage(currentImageUrl);
+                
+                if (detectedColor && (!selectedColor.value || selectedColor.value.id !== detectedColor.id)) {
+                    console.log('Auto-detecting color from image:', detectedColor.name);
+                    selectedColor.value = detectedColor;
+                    
+                    // Actualizar el índice de imagen para que corresponda dentro del color seleccionado
+                    nextTick(() => {
+                        const colorImages = getImagesByColor(product.value, detectedColor.id);
+                        const imageIndexInColor = colorImages.findIndex(img => img === currentImageUrl);
+                        if (imageIndexInColor !== -1) {
+                            selectedImageIndex.value = imageIndexInColor;
+                        }
+                    });
+                }
+            }
+        }
+    };
+
+    // Función para manejar cambios en el scroll y detectar el color de la imagen visible
+    const handleImageScrollDetection = () => {
+        if (!mainImageContainerRef.value || !product.value) return;
+        
+        const container = mainImageContainerRef.value;
+        const containerCenter = container.scrollLeft + container.clientWidth / 2;
+        const imageElements = Array.from(container.children).filter(c => c.tagName === 'IMG');
+        
+        // Encontrar la imagen más cercana al centro
+        let closestImageIndex = -1;
+        let minDistance = Infinity;
+        
+        imageElements.forEach((img, index) => {
+            const imgCenter = img.offsetLeft + img.offsetWidth / 2;
+            const distance = Math.abs(imgCenter - containerCenter);
+            
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestImageIndex = index;
+            }
+        });
+        
+        if (closestImageIndex !== -1 && currentImages.value.length > 0) {
+            // Calcular el índice real dentro de las imágenes del color actual
+            const realIndex = closestImageIndex % currentImages.value.length;
+            if (realIndex !== selectedImageIndex.value) {
+                selectedImageIndex.value = realIndex;
+            }
+        }
     };
 
     const selectSize = (size) => {
@@ -233,6 +465,11 @@
         
         // Actualizar el índice seleccionado
         selectedImageIndex.value = nextRealIndex;
+        
+        // Detectar el color de la nueva imagen visible solo si no hay color seleccionado
+        if (!selectedColor.value) {
+            detectColorFromVisibleImage(nextRealIndex);
+        }
         
         // Detectar cuántas imágenes se muestran por pantalla para mejor posicionamiento
         const containerWidth = container.clientWidth;
@@ -339,6 +576,11 @@
         // Actualizar el índice seleccionado
         selectedImageIndex.value = prevRealIndex;
         
+        // Detectar el color de la nueva imagen visible solo si no hay color seleccionado
+        if (!selectedColor.value) {
+            detectColorFromVisibleImage(prevRealIndex);
+        }
+        
         // Detectar cuántas imágenes se muestran por pantalla para mejor posicionamiento
         const containerWidth = container.clientWidth;
         const imageElements = Array.from(container.children).filter(c => c.tagName === 'IMG');
@@ -436,6 +678,121 @@
         if (newQuantity >= 1 && newQuantity <= currentStock.value) {
             quantity.value = newQuantity;
         }
+    };
+
+    // Función para agregar producto al carrito
+    const handleAddToCart = async () => {
+        // Verificar que el usuario esté autenticado
+        if (!userStore.isLoggedIn) {
+            mostrarNotificacion('Debes iniciar sesión para agregar productos al carrito', 0);
+            return;
+        }
+
+        // Verificar que se haya seleccionado color y talla
+        if (!selectedColor.value) {
+            mostrarNotificacion('Por favor selecciona un color', 0);
+            return;
+        }
+
+        if (!selectedSize.value) {
+            mostrarNotificacion('Por favor selecciona una talla', 0);
+            return;
+        }
+
+        // Verificar que haya stock disponible
+        if (currentStock.value === 0) {
+            mostrarNotificacion('Producto sin stock', 0);
+            return;
+        }
+
+        // Verificar que la cantidad sea válida
+        if (quantity.value > currentStock.value) {
+            mostrarNotificacion(`Solo hay ${currentStock.value} unidades disponibles`, 0);
+            return;
+        }
+
+        try {
+            const result = await addToCart({
+                product_id: parseInt(props.id),
+                quantity: quantity.value,
+                size_id: selectedSize.value.id,
+                color_id: selectedColor.value.id
+            });
+
+            if (result.success) {
+                mostrarNotificacion(result.message, 1);
+                // Opcional: resetear cantidad a 1 después de agregar
+                quantity.value = 1;
+            } else {
+                // Manejar errores específicos de autenticación
+                if (result.status === 403 || result.status === 401) {
+                    mostrarNotificacion(result.message, 0);
+                    // Recargar la página después de un tiempo para forzar re-login
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                } else {
+                    mostrarNotificacion(result.message, 0);
+                }
+            }
+        } catch (error) {
+            console.error('Error adding to cart:', error);
+            mostrarNotificacion('Error al agregar producto al carrito', 0);
+        }
+    };
+
+    // Función para cambiar cantidad en el carrito
+    const changeCartQuantity = async (delta) => {
+        if (!currentVariantCartItemId.value) return;
+        
+        const newQuantity = currentVariantQuantityInCart.value + delta;
+        
+        // Verificar límites
+        if (newQuantity <= 0) {
+            // Si la cantidad llega a 0 o menos, eliminar del carrito
+            try {
+                const result = await removeFromCart(currentVariantCartItemId.value);
+                if (result.success) {
+                    mostrarNotificacion('Producto eliminado del carrito', 1);
+                } else {
+                    mostrarNotificacion(result.message, 0);
+                }
+            } catch (error) {
+                console.error('Error removing from cart:', error);
+                mostrarNotificacion('Error al eliminar del carrito', 0);
+            }
+            return;
+        }
+        
+        if (newQuantity > currentStock.value) {
+            mostrarNotificacion(`Solo hay ${currentStock.value} unidades disponibles`, 0);
+            return;
+        }
+        
+        // Actualizar cantidad en el carrito
+        try {
+            const result = await updateCartItem(currentVariantCartItemId.value, newQuantity);
+            if (result.success) {
+                mostrarNotificacion('Cantidad actualizada', 1);
+            } else {
+                mostrarNotificacion(result.message, 0);
+            }
+        } catch (error) {
+            console.error('Error updating cart quantity:', error);
+            mostrarNotificacion('Error al actualizar cantidad', 0);
+        }
+    };
+
+    // Función para actualizar la información del carrito cuando cambian las variantes
+    const updateCartInfo = () => {
+        if (!props.id || !selectedSize.value || !selectedColor.value) {
+            cartQuantity.value = 0;
+            cartItemId.value = null;
+            return;
+        }
+        
+        cartQuantity.value = currentVariantQuantityInCart.value;
+        cartItemId.value = currentVariantCartItemId.value;
     };
 
     // Sync thumbnail selection on manual scroll of main image
@@ -549,6 +906,12 @@
                 if (selectedImageIndex.value !== realIndex) {
                     selectedImageIndex.value = realIndex;
                     
+                    // Detectar y actualizar el color automáticamente basado en la imagen actual
+                    // Solo si no hay color seleccionado o si estamos viendo todas las imágenes
+                    if (!selectedColor.value) {
+                        detectColorFromVisibleImage(realIndex);
+                    }
+                    
                     // Scroll thumbnail into view
                     const thumbContainer = thumbnailContainerRef.value;
                     if (thumbContainer && thumbContainer.children[realIndex]) {
@@ -567,6 +930,11 @@
     onMounted(async () => {
         // Cargar usuario verificando autenticación con el backend
         await userStore.loadUserFromStorage();
+        
+        // Cargar carrito si el usuario está autenticado
+        if (userStore.isLoggedIn) {
+            await loadCart();
+        }
         
         await loadProduct();
 
@@ -616,6 +984,11 @@
             initInfiniteCarousel();
         });
     });
+
+    // Watcher para actualizar información del carrito cuando cambie la variante seleccionada
+    watch([selectedColor, selectedSize], () => {
+        updateCartInfo();
+    }, { immediate: true });
 
 </script>
 
@@ -705,7 +1078,7 @@
                     </div>
                 </div>
                 <div class="precioDetalleProd" v-if="availableSizes.length > 0">
-                    <p class="preDetText">Talla</p>
+                    <p class="preDetText">Seleccione Talla</p>
                     <div class="contColorDet">
                         <div 
                             v-for="size in availableSizes" 
@@ -725,7 +1098,8 @@
                     </div>
                 </div>
                 <div class="precioDetalleProd" v-if="selectedSize && selectedColor">
-                    <div class="contColorDet">
+                    <!-- Cuando el producto NO está en el carrito -->
+                    <div v-if="!isCurrentVariantInCart" class="contColorDet">
                         <div class="flechasCantidad">
                             <i class="fa-solid fa-chevron-up" @click="changeQuantity(1)" style="cursor: pointer;"></i>
                             <i class="fa-solid fa-chevron-down" @click="changeQuantity(-1)" style="cursor: pointer;"></i>
@@ -733,12 +1107,60 @@
                         <div class="cuadroColor cuadroCantidad">{{ quantity }}</div>
                         <button 
                             class="btnAddToCartDetail"
-                            :disabled="currentStock === 0"
-                            :style="{ opacity: currentStock === 0 ? 0.5 : 1 }"
+                            :disabled="currentStock === 0 || cartLoading"
+                            :style="{ opacity: currentStock === 0 || cartLoading ? 0.5 : 1 }"
+                            @click="handleAddToCart"
                         >
-                            {{ currentStock === 0 ? 'SIN STOCK' : 'AGREGAR A LA BOLSA' }}
+                            <span v-if="cartLoading">
+                                <i class="fas fa-spinner fa-spin"></i> AGREGANDO...
+                            </span>
+                            <span v-else>
+                                {{ currentStock === 0 ? 'SIN STOCK' : 'AGREGAR A LA BOLSA' }}
+                            </span>
                         </button>
                     </div>
+                    
+                    <!-- Cuando el producto YA está en el carrito -->
+                    <div v-else class="contColorDet">
+                        <div class="productInCartContainer">
+                            <div class="cartIndicator">
+                                <i class="fa-solid fa-check-circle" style="color: #f06baa; margin-right: 8px;"></i>
+                                <span style="color: #f06baa; font-weight: bold;">YA EN TU BOLSA</span>
+                            </div>
+                            <div class="cartQuantityControls">
+                                <div class="flechasCantidad">
+                                    <i 
+                                        class="fa-solid fa-chevron-up" 
+                                        @click="changeCartQuantity(1)" 
+                                        :style="{ 
+                                            cursor: cartLoading ? 'wait' : 'pointer',
+                                            opacity: cartLoading || currentVariantQuantityInCart >= currentStock ? 0.5 : 1
+                                        }"
+                                        :disabled="cartLoading || currentVariantQuantityInCart >= currentStock"
+                                    ></i>
+                                    <i 
+                                        class="fa-solid fa-chevron-down" 
+                                        @click="changeCartQuantity(-1)" 
+                                        :style="{ 
+                                            cursor: cartLoading ? 'wait' : 'pointer',
+                                            opacity: cartLoading ? 0.5 : 1
+                                        }"
+                                        :disabled="cartLoading"
+                                    ></i>
+                                </div>
+                                <div class="cuadroColor cuadroCantidad" :style="{ backgroundColor: '#f06baa', color: 'white' }">
+                                    <span v-if="cartLoading">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                    </span>
+                                    <span v-else>{{ currentVariantQuantityInCart }}</span>
+                                </div>
+                                <div class="cartQuantityLabel">
+                                    <small style="color: #666;">En tu bolsa</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <p v-if="currentStock > 0" style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">
                         Stock disponible: {{ currentStock }} unidades
                     </p>

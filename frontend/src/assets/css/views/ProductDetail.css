@@ -141,6 +141,57 @@
     cursor: pointer;
 }
 
+/* Estilos para cuando el producto está en el carrito */
+.productInCartContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+}
+
+.cartIndicator {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0.5rem;
+    background-color: #f8f9fa;
+    border: 2px solid #f06baa;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+}
+
+.cartQuantityControls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cartQuantityLabel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin-left: 0.5rem;
+}
+
+/* Modificaciones para los controles de cantidad cuando está en carrito */
+.cartQuantityControls .cuadroCantidad {
+    border: 2px solid #f06baa;
+    font-weight: bold;
+}
+
+.cartQuantityControls .flechasCantidad {
+    color: black;
+}
+
+.cartQuantityControls .flechasCantidad i:hover {
+    color: #f06baa;
+}
+
+.cartQuantityControls .flechasCantidad i:disabled {
+    color: #ccc;
+    cursor: not-allowed;
+}
+
 .addFavDet {
     margin: 1rem 0;
 }
