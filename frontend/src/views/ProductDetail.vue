@@ -227,42 +227,62 @@
         const container = mainImageContainerRef.value;
         if (!container || currentImages.value.length <= 1) return;
         
-        const imageElements = Array.from(container.children).filter(c => c.tagName === 'IMG');
-        if (imageElements.length === 0) return;
+        // Cambiar a la siguiente imagen lógica
+        const currentRealIndex = selectedImageIndex.value;
+        const nextRealIndex = (currentRealIndex + 1) % currentImages.value.length;
         
-        // Encontrar la siguiente imagen basada en la posición actual
-        const containerCenter = container.scrollLeft + container.clientWidth / 2;
-        let currentIndex = -1;
+        // Actualizar el índice seleccionado
+        selectedImageIndex.value = nextRealIndex;
+        
+        // Detectar cuántas imágenes se muestran por pantalla para mejor posicionamiento
+        const containerWidth = container.clientWidth;
+        const imageElements = Array.from(container.children).filter(c => c.tagName === 'IMG');
+        const imageWidth = imageElements.length > 0 ? imageElements[0].offsetWidth : 0;
+        const imagesPerView = Math.floor(containerWidth / imageWidth);
+        
+        // Buscar la imagen correspondiente en el DOM
+        const totalImages = currentImages.value.length;
+        const currentScrollLeft = container.scrollLeft;
+        
+        let bestTarget = null;
         let minDistance = Infinity;
         
-        // Encontrar imagen actual
+        // Para mejor comportamiento en vistas con 2 imágenes, priorizar posiciones óptimas
         imageElements.forEach((img, index) => {
-            const imgCenter = img.offsetLeft + img.offsetWidth / 2;
-            const distance = Math.abs(imgCenter - containerCenter);
-            
-            if (distance < minDistance) {
-                minDistance = distance;
-                currentIndex = index;
+            const imageRealIndex = index % totalImages;
+            if (imageRealIndex === nextRealIndex) {
+                const imgLeft = img.offsetLeft;
+                
+                // Si mostramos 2 imágenes, calcular distancia considerando el ancho de 2 imágenes
+                let targetScrollPosition;
+                if (imagesPerView >= 2) {
+                    // Para 2+ imágenes visibles, posicionar para mostrar la imagen seleccionada y la siguiente
+                    targetScrollPosition = imgLeft;
+                } else {
+                    // Para 1 imagen visible, centrar la imagen
+                    targetScrollPosition = imgLeft - (containerWidth - imageWidth) / 2;
+                }
+                
+                const distance = Math.abs(currentScrollLeft - targetScrollPosition);
+                
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    bestTarget = { element: img, index, targetScrollPosition };
+                }
             }
         });
         
-        // Ir a la siguiente imagen
-        const nextIndex = currentIndex + 1;
-        if (nextIndex < imageElements.length) {
+        if (bestTarget) {
             container.scrollTo({
-                left: imageElements[nextIndex].offsetLeft,
+                left: bestTarget.targetScrollPosition,
                 behavior: 'smooth'
             });
-            
-            // Actualizar selectedImageIndex para sincronizar con thumbnails
-            const realIndex = nextIndex % currentImages.value.length;
-            selectedImageIndex.value = realIndex;
             
             // Sincronizar thumbnail
             nextTick(() => {
                 const thumbContainer = thumbnailContainerRef.value;
-                if (thumbContainer && thumbContainer.children[realIndex]) {
-                    const thumbEl = thumbContainer.children[realIndex];
+                if (thumbContainer && thumbContainer.children[nextRealIndex]) {
+                    const thumbEl = thumbContainer.children[nextRealIndex];
                     thumbEl.scrollIntoView({
                         behavior: 'smooth',
                         block: 'nearest',
@@ -270,6 +290,39 @@
                     });
                 }
             });
+            
+            // Auto-reposicionamiento si estamos cerca de los límites
+            if (bestTarget.index > imageElements.length - 15 || bestTarget.index < 15) {
+                setTimeout(() => {
+                    const centerStart = Math.floor(imageElements.length / 2);
+                    let repositionTarget = null;
+                    
+                    // Buscar una copia de la misma imagen cerca del centro
+                    for (let i = centerStart - 10; i < centerStart + 10; i++) {
+                        if (i >= 0 && i < imageElements.length) {
+                            const imageRealIndex = i % totalImages;
+                            if (imageRealIndex === nextRealIndex) {
+                                repositionTarget = imageElements[i];
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (repositionTarget) {
+                        let targetScroll;
+                        if (imagesPerView >= 2) {
+                            targetScroll = repositionTarget.offsetLeft;
+                        } else {
+                            targetScroll = repositionTarget.offsetLeft - (containerWidth - imageWidth) / 2;
+                        }
+                        
+                        container.scrollTo({
+                            left: targetScroll,
+                            behavior: 'auto' // Sin animación
+                        });
+                    }
+                }, 600);
+            }
         }
     };
 
@@ -277,42 +330,64 @@
         const container = mainImageContainerRef.value;
         if (!container || currentImages.value.length <= 1) return;
         
-        const imageElements = Array.from(container.children).filter(c => c.tagName === 'IMG');
-        if (imageElements.length === 0) return;
+        // Cambiar a la imagen anterior lógica
+        const currentRealIndex = selectedImageIndex.value;
+        const prevRealIndex = currentRealIndex === 0 
+            ? currentImages.value.length - 1 
+            : currentRealIndex - 1;
         
-        // Encontrar la imagen anterior basada en la posición actual
-        const containerCenter = container.scrollLeft + container.clientWidth / 2;
-        let currentIndex = -1;
+        // Actualizar el índice seleccionado
+        selectedImageIndex.value = prevRealIndex;
+        
+        // Detectar cuántas imágenes se muestran por pantalla para mejor posicionamiento
+        const containerWidth = container.clientWidth;
+        const imageElements = Array.from(container.children).filter(c => c.tagName === 'IMG');
+        const imageWidth = imageElements.length > 0 ? imageElements[0].offsetWidth : 0;
+        const imagesPerView = Math.floor(containerWidth / imageWidth);
+        
+        // Buscar la imagen correspondiente en el DOM
+        const totalImages = currentImages.value.length;
+        const currentScrollLeft = container.scrollLeft;
+        
+        let bestTarget = null;
         let minDistance = Infinity;
         
-        // Encontrar imagen actual
+        // Para mejor comportamiento en vistas con 2 imágenes, priorizar posiciones óptimas
         imageElements.forEach((img, index) => {
-            const imgCenter = img.offsetLeft + img.offsetWidth / 2;
-            const distance = Math.abs(imgCenter - containerCenter);
-            
-            if (distance < minDistance) {
-                minDistance = distance;
-                currentIndex = index;
+            const imageRealIndex = index % totalImages;
+            if (imageRealIndex === prevRealIndex) {
+                const imgLeft = img.offsetLeft;
+                
+                // Si mostramos 2 imágenes, calcular distancia considerando el ancho de 2 imágenes
+                let targetScrollPosition;
+                if (imagesPerView >= 2) {
+                    // Para 2+ imágenes visibles, posicionar para mostrar la imagen seleccionada y la siguiente
+                    targetScrollPosition = imgLeft;
+                } else {
+                    // Para 1 imagen visible, centrar la imagen
+                    targetScrollPosition = imgLeft - (containerWidth - imageWidth) / 2;
+                }
+                
+                const distance = Math.abs(currentScrollLeft - targetScrollPosition);
+                
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    bestTarget = { element: img, index, targetScrollPosition };
+                }
             }
         });
         
-        // Ir a la imagen anterior
-        const prevIndex = currentIndex - 1;
-        if (prevIndex >= 0) {
+        if (bestTarget) {
             container.scrollTo({
-                left: imageElements[prevIndex].offsetLeft,
+                left: bestTarget.targetScrollPosition,
                 behavior: 'smooth'
             });
-            
-            // Actualizar selectedImageIndex para sincronizar con thumbnails
-            const realIndex = prevIndex % currentImages.value.length;
-            selectedImageIndex.value = realIndex;
             
             // Sincronizar thumbnail
             nextTick(() => {
                 const thumbContainer = thumbnailContainerRef.value;
-                if (thumbContainer && thumbContainer.children[realIndex]) {
-                    const thumbEl = thumbContainer.children[realIndex];
+                if (thumbContainer && thumbContainer.children[prevRealIndex]) {
+                    const thumbEl = thumbContainer.children[prevRealIndex];
                     thumbEl.scrollIntoView({
                         behavior: 'smooth',
                         block: 'nearest',
@@ -320,6 +395,39 @@
                     });
                 }
             });
+            
+            // Auto-reposicionamiento si estamos cerca de los límites
+            if (bestTarget.index > imageElements.length - 15 || bestTarget.index < 15) {
+                setTimeout(() => {
+                    const centerStart = Math.floor(imageElements.length / 2);
+                    let repositionTarget = null;
+                    
+                    // Buscar una copia de la misma imagen cerca del centro
+                    for (let i = centerStart - 10; i < centerStart + 10; i++) {
+                        if (i >= 0 && i < imageElements.length) {
+                            const imageRealIndex = i % totalImages;
+                            if (imageRealIndex === prevRealIndex) {
+                                repositionTarget = imageElements[i];
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (repositionTarget) {
+                        let targetScroll;
+                        if (imagesPerView >= 2) {
+                            targetScroll = repositionTarget.offsetLeft;
+                        } else {
+                            targetScroll = repositionTarget.offsetLeft - (containerWidth - imageWidth) / 2;
+                        }
+                        
+                        container.scrollTo({
+                            left: targetScroll,
+                            behavior: 'auto' // Sin animación
+                        });
+                    }
+                }, 600);
+            }
         }
     };
 
