@@ -43,6 +43,32 @@
         return getImagesByColor(product.value, selectedColor.value.id);
     });
 
+    // Imágenes para el carrusel infinito (replicación masiva para scroll imperceptible)
+    const infiniteImages = computed(() => {
+        const images = currentImages.value;
+        if (images.length <= 1) return images;
+        
+        // Crear múltiples copias para asegurar scroll infinito imperceptible
+        // 5 copias de cada lado proporcionan buffer masivo
+        const copies = 5;
+        const result = [];
+        
+        // Agregar múltiples copias al inicio
+        for (let i = 0; i < copies; i++) {
+            result.push(...images);
+        }
+        
+        // Agregar las imágenes originales (centro)
+        result.push(...images);
+        
+        // Agregar múltiples copias al final
+        for (let i = 0; i < copies; i++) {
+            result.push(...images);
+        }
+        
+        return result;
+    });
+
     const currentStock = computed(() => {
         if (!product.value || !selectedSize.value || !selectedColor.value) return 0;
         return getVariantStock(product.value, selectedSize.value.id, selectedColor.value.id);
@@ -129,18 +155,56 @@
     };
 
     const selectImage = (index) => {
-        if (index < 0 || index >= currentImages.value.length) return;
+        if (currentImages.value.length === 0) return;
         
-        selectedImageIndex.value = index;
+        // Manejar índices negativos y fuera de rango para slide infinito
+        let normalizedIndex = index;
+        if (index < 0) {
+            normalizedIndex = currentImages.value.length - 1;
+        } else if (index >= currentImages.value.length) {
+            normalizedIndex = 0;
+        }
+        
+        selectedImageIndex.value = normalizedIndex;
+        
+        // Marcar como selección manual para evitar auto-corrección inmediata
+        isManualSelection = true;
 
         nextTick(() => {
-            // Scroll main image
+            // Scroll main image con animación suave para carrusel infinito
             const container = mainImageContainerRef.value;
             if (container) {
-                const imageEl = Array.from(container.children).filter(c => c.tagName === 'IMG')[index];
-                if(imageEl){
+                const imageElements = Array.from(container.children).filter(c => c.tagName === 'IMG');
+                
+                // Encontrar todas las copias de la imagen deseada
+                const targetImageCopies = [];
+                imageElements.forEach((img, index) => {
+                    if (index % currentImages.value.length === normalizedIndex) {
+                        targetImageCopies.push({
+                            index: index,
+                            element: img,
+                            left: img.offsetLeft
+                        });
+                    }
+                });
+                
+                // Encontrar la copia más cercana a la posición actual
+                const currentScrollLeft = container.scrollLeft;
+                let closestCopy = targetImageCopies[0];
+                let minDistance = Math.abs(currentScrollLeft - closestCopy.left);
+                
+                targetImageCopies.forEach(copy => {
+                    const distance = Math.abs(currentScrollLeft - copy.left);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestCopy = copy;
+                    }
+                });
+                
+                // Hacer scroll a la copia más cercana
+                if (closestCopy) {
                     container.scrollTo({
-                        left: imageEl.offsetLeft,
+                        left: closestCopy.left,
                         behavior: 'smooth'
                     });
                 }
@@ -148,8 +212,8 @@
 
             // Scroll thumbnail into view
             const thumbContainer = thumbnailContainerRef.value;
-            if (thumbContainer && thumbContainer.children[index]) {
-                const thumbEl = thumbContainer.children[index];
+            if (thumbContainer && thumbContainer.children[normalizedIndex]) {
+                const thumbEl = thumbContainer.children[normalizedIndex];
                 thumbEl.scrollIntoView({
                     behavior: 'smooth',
                     block: 'nearest',
@@ -160,11 +224,103 @@
     };
 
     const nextImage = () => {
-        selectImage(selectedImageIndex.value + 1);
+        const container = mainImageContainerRef.value;
+        if (!container || currentImages.value.length <= 1) return;
+        
+        const imageElements = Array.from(container.children).filter(c => c.tagName === 'IMG');
+        if (imageElements.length === 0) return;
+        
+        // Encontrar la siguiente imagen basada en la posición actual
+        const containerCenter = container.scrollLeft + container.clientWidth / 2;
+        let currentIndex = -1;
+        let minDistance = Infinity;
+        
+        // Encontrar imagen actual
+        imageElements.forEach((img, index) => {
+            const imgCenter = img.offsetLeft + img.offsetWidth / 2;
+            const distance = Math.abs(imgCenter - containerCenter);
+            
+            if (distance < minDistance) {
+                minDistance = distance;
+                currentIndex = index;
+            }
+        });
+        
+        // Ir a la siguiente imagen
+        const nextIndex = currentIndex + 1;
+        if (nextIndex < imageElements.length) {
+            container.scrollTo({
+                left: imageElements[nextIndex].offsetLeft,
+                behavior: 'smooth'
+            });
+            
+            // Actualizar selectedImageIndex para sincronizar con thumbnails
+            const realIndex = nextIndex % currentImages.value.length;
+            selectedImageIndex.value = realIndex;
+            
+            // Sincronizar thumbnail
+            nextTick(() => {
+                const thumbContainer = thumbnailContainerRef.value;
+                if (thumbContainer && thumbContainer.children[realIndex]) {
+                    const thumbEl = thumbContainer.children[realIndex];
+                    thumbEl.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'nearest',
+                        inline: 'nearest'
+                    });
+                }
+            });
+        }
     };
 
     const prevImage = () => {
-        selectImage(selectedImageIndex.value - 1);
+        const container = mainImageContainerRef.value;
+        if (!container || currentImages.value.length <= 1) return;
+        
+        const imageElements = Array.from(container.children).filter(c => c.tagName === 'IMG');
+        if (imageElements.length === 0) return;
+        
+        // Encontrar la imagen anterior basada en la posición actual
+        const containerCenter = container.scrollLeft + container.clientWidth / 2;
+        let currentIndex = -1;
+        let minDistance = Infinity;
+        
+        // Encontrar imagen actual
+        imageElements.forEach((img, index) => {
+            const imgCenter = img.offsetLeft + img.offsetWidth / 2;
+            const distance = Math.abs(imgCenter - containerCenter);
+            
+            if (distance < minDistance) {
+                minDistance = distance;
+                currentIndex = index;
+            }
+        });
+        
+        // Ir a la imagen anterior
+        const prevIndex = currentIndex - 1;
+        if (prevIndex >= 0) {
+            container.scrollTo({
+                left: imageElements[prevIndex].offsetLeft,
+                behavior: 'smooth'
+            });
+            
+            // Actualizar selectedImageIndex para sincronizar con thumbnails
+            const realIndex = prevIndex % currentImages.value.length;
+            selectedImageIndex.value = realIndex;
+            
+            // Sincronizar thumbnail
+            nextTick(() => {
+                const thumbContainer = thumbnailContainerRef.value;
+                if (thumbContainer && thumbContainer.children[realIndex]) {
+                    const thumbEl = thumbContainer.children[realIndex];
+                    thumbEl.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'nearest',
+                        inline: 'nearest'
+                    });
+                }
+            });
+        }
     };
 
     const changeQuantity = (delta) => {
@@ -176,43 +332,128 @@
 
     // Sync thumbnail selection on manual scroll of main image
     let scrollTimeout = null;
+    let isManualSelection = false; // Flag para prevenir auto-corrección después de selección manual
+    
     const handleMainImageScroll = () => {
         if (scrollTimeout) clearTimeout(scrollTimeout);
+        
+        // Si es una selección manual, esperar más tiempo antes de auto-detectar
+        const debounceTime = isManualSelection ? 500 : 50;
+        
         scrollTimeout = setTimeout(() => {
+            // Reset flag después del debounce
+            isManualSelection = false;
             const container = mainImageContainerRef.value;
             if (!container || container.children.length === 0) return;
 
             const imageElements = Array.from(container.children).filter(c => c.tagName === 'IMG');
             if(imageElements.length === 0) return;
 
-            const containerCenter = container.scrollLeft + container.clientWidth / 2;
-            let closestIndex = -1;
-            let minDistance = Infinity;
+            // Para el carrusel infinito, verificar si estamos en los extremos
+            const scrollLeft = container.scrollLeft;
+            const containerWidth = container.clientWidth;
+            const totalWidth = container.scrollWidth;
+
+            // Si hay imágenes duplicadas (más de 1 imagen original)
+            if (currentImages.value.length > 1) {
+                const copies = 5;
+                const originalLength = currentImages.value.length;
+                
+                // Definir las zonas de operación
+                const centerStart = copies * originalLength;
+                const centerEnd = centerStart + originalLength - 1;
+                
+                // Encontrar la imagen actual basada en la posición de scroll
+                const containerCenter = scrollLeft + containerWidth / 2;
+                let currentVisualIndex = -1;
+                let minDistance = Infinity;
+                
+                imageElements.forEach((img, index) => {
+                    const imgCenter = img.offsetLeft + img.offsetWidth / 2;
+                    const distance = Math.abs(imgCenter - containerCenter);
+                    
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        currentVisualIndex = index;
+                    }
+                });
+                
+                // Si estamos en las primeras 2 copias, saltar hacia el centro-final
+                if (currentVisualIndex < 2 * originalLength) {
+                    const equivalentCenterIndex = centerStart + (currentVisualIndex % originalLength);
+                    if (imageElements[equivalentCenterIndex]) {
+                        container.scrollTo({
+                            left: imageElements[equivalentCenterIndex].offsetLeft,
+                            behavior: 'auto'
+                        });
+                        return;
+                    }
+                }
+                
+                // Si estamos en las últimas 2 copias, saltar hacia el centro-inicio
+                if (currentVisualIndex >= (copies + 1 + 2) * originalLength) {
+                    const equivalentCenterIndex = centerStart + (currentVisualIndex % originalLength);
+                    if (imageElements[equivalentCenterIndex]) {
+                        container.scrollTo({
+                            left: imageElements[equivalentCenterIndex].offsetLeft,
+                            behavior: 'auto'
+                        });
+                        return;
+                    }
+                }
+            }
+
+            // Lógica mejorada para detectar imagen actual en desktop
+            const containerLeft = scrollLeft;
+            const containerRight = scrollLeft + containerWidth;
+            let bestIndex = -1;
+            let bestVisibility = 0;
 
             imageElements.forEach((img, index) => {
-                const imgCenter = img.offsetLeft + img.offsetWidth / 2;
-                const distance = Math.abs(imgCenter - containerCenter);
-
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    closestIndex = index;
+                const imgLeft = img.offsetLeft;
+                const imgRight = img.offsetLeft + img.offsetWidth;
+                
+                // Calcular qué porcentaje de la imagen está visible
+                const visibleLeft = Math.max(containerLeft, imgLeft);
+                const visibleRight = Math.min(containerRight, imgRight);
+                const visibleWidth = Math.max(0, visibleRight - visibleLeft);
+                const visibilityPercentage = visibleWidth / img.offsetWidth;
+                
+                // Lógica más conservadora para evitar cambios constantes
+                if (visibilityPercentage > 0.4) { // Aumentar umbral a 40% para más estabilidad
+                    // Solo cambiar si hay una diferencia significativa de visibilidad (>20%)
+                    if (visibilityPercentage > bestVisibility + 0.2 || 
+                        (bestIndex === -1 && visibilityPercentage > 0.5)) {
+                        bestVisibility = visibilityPercentage;
+                        bestIndex = index;
+                    }
                 }
             });
 
-            if (closestIndex !== -1 && selectedImageIndex.value !== closestIndex) {
-                selectedImageIndex.value = closestIndex;
-                 // Scroll thumbnail into view
-                const thumbContainer = thumbnailContainerRef.value;
-                if (thumbContainer && thumbContainer.children[closestIndex]) {
-                    const thumbEl = thumbContainer.children[closestIndex];
-                    thumbEl.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'nearest',
-                        inline: 'nearest'
-                    });
+            if (bestIndex !== -1) {
+                // Convertir índice visual a índice real usando módulo
+                let realIndex = bestIndex % currentImages.value.length;
+                
+                // Asegurar que el índice esté en rango válido
+                if (realIndex < 0) realIndex = 0;
+                if (realIndex >= currentImages.value.length) realIndex = currentImages.value.length - 1;
+
+                if (selectedImageIndex.value !== realIndex) {
+                    selectedImageIndex.value = realIndex;
+                    
+                    // Scroll thumbnail into view
+                    const thumbContainer = thumbnailContainerRef.value;
+                    if (thumbContainer && thumbContainer.children[realIndex]) {
+                        const thumbEl = thumbContainer.children[realIndex];
+                        thumbEl.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'nearest',
+                            inline: 'nearest'
+                        });
+                    }
                 }
             }
-        }, 50); // Debounce scroll event
+        }, debounceTime); // Debounce scroll event
     };
 
     onMounted(async () => {
@@ -228,8 +469,32 @@
 
             checkOverflow(mainImageContainer, leftButton, rightButton);
             window.addEventListener('resize', () => checkOverflow(mainImageContainer, leftButton, rightButton));
+            
+            // Inicializar carrusel infinito
+            initInfiniteCarousel();
         });
     });
+
+    // Inicializar posición del carrusel infinito
+    const initInfiniteCarousel = () => {
+        nextTick(() => {
+            const container = mainImageContainerRef.value;
+            if (container && currentImages.value.length > 1) {
+                // Posicionar en el centro del carrusel (después de 5 copias)
+                const copies = 5;
+                const originalLength = currentImages.value.length;
+                const centerStartIndex = copies * originalLength;
+                const imageElements = Array.from(container.children).filter(c => c.tagName === 'IMG');
+                
+                if (imageElements[centerStartIndex]) {
+                    container.scrollTo({
+                        left: imageElements[centerStartIndex].offsetLeft,
+                        behavior: 'auto'
+                    });
+                }
+            }
+        });
+    };
 
     watch(currentImages, () => {
         nextTick(() => {
@@ -238,6 +503,9 @@
             const rightButton = document.querySelector('.scrollDerechaDetalle');
 
             checkOverflow(mainImageContainer, leftButton, rightButton);
+            
+            // Inicializar carrusel infinito cuando cambien las imágenes
+            initInfiniteCarousel();
         });
     });
 
@@ -279,12 +547,12 @@
                 <div class="contenedorImagenesDetalle">
                     <div class="vitrinaSlide" ref="mainImageContainerRef" @scroll="handleMainImageScroll">
                         <img 
-                            v-for="(image, index) in currentImages" 
-                            :key="index"
+                            v-for="(image, index) in infiniteImages" 
+                            :key="`infinite-${index}`"
                             :src="image" 
                             :alt="product.name || 'Producto'"
                         >
-                        <div v-if="currentImages.length === 0" style="display: flex; align-items: center; justify-content: center; min-height: 400px; color: #666;">
+                        <div v-if="infiniteImages.length === 0" style="display: flex; align-items: center; justify-content: center; min-height: 400px; color: #666;">
                             Sin imágenes disponibles para este color
                         </div>
                     </div>
@@ -415,5 +683,5 @@
         </div>
     </section>
 
-    <Nuevo></Nuevo>
+    <Nuevo :current-product-id="props.id"></Nuevo>
 </template>

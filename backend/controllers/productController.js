@@ -18,7 +18,8 @@ export const getAllProducts = async (req, res) => {
       sortBy = 'created_at',
       sortOrder = 'DESC',
       onSale,
-      featured
+      featured,
+      exclude
     } = req.query;
 
     const offset = (page - 1) * limit;
@@ -47,6 +48,12 @@ export const getAllProducts = async (req, res) => {
 
     if (featured === 'true') {
       where.is_featured = true;
+    }
+
+    if (exclude) {
+      console.log('🔍 Exclude parameter received:', exclude, 'Type:', typeof exclude);
+      where.id = { [Op.ne]: parseInt(exclude) };
+      console.log('🔍 Where condition for exclude:', where.id);
     }
 
     const { count, rows: products } = await Product.findAndCountAll({
@@ -746,7 +753,8 @@ export const getNewProducts = async (req, res) => {
       sizes,
       colors,
       sortBy = 'created_at',
-      sortOrder = 'DESC'
+      sortOrder = 'DESC',
+      exclude
     } = req.query;
 
     const offset = (page - 1) * limit;
@@ -764,6 +772,12 @@ export const getNewProducts = async (req, res) => {
       where.price = {};
       if (minPrice) where.price[Op.gte] = minPrice;
       if (maxPrice) where.price[Op.lte] = maxPrice;
+    }
+
+    if (exclude) {
+      console.log('🔍 getNewProducts - Exclude parameter received:', exclude, 'Type:', typeof exclude);
+      where.id = { [Op.ne]: parseInt(exclude) };
+      console.log('🔍 getNewProducts - Where condition for exclude:', where.id);
     }
 
     // Construir include con filtros de variantes

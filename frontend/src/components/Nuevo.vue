@@ -6,6 +6,14 @@
     import { useApi } from '/src/js/composables/useFetch.js'
     import { checkOverflow } from '/src/js/overflow.js'
 
+    // Props para recibir el ID del producto actual (cuando esté en ProductDetail)
+    const props = defineProps({
+        currentProductId: {
+            type: [String, Number],
+            default: null
+        }
+    })
+
     const route = useRoute()
     const titulo = route.name === 'ProductDetail' ? 'TAMBIÉN TE PUEDE INTERESAR' : 'LO NUEVO'
     
@@ -13,13 +21,55 @@
     const loading = ref(true)
     const error = ref(null)
 
-    const fetchNewProducts = async () => {
+    const fetchProducts = async () => {
         try {
-            const { data, error: fetchError } = await useApi('/api/products/nuevo')
+            let apiUrl = '/api/products/nuevo'
+            let excludeProductId = null
+            
+            // Si estamos en ProductDetail, obtener productos destacados y excluir el actual
+            if (route.name === 'ProductDetail') {
+                apiUrl = '/api/products'
+                excludeProductId = props.currentProductId
+                console.log('🔍 Frontend - Current product ID to exclude:', excludeProductId)
+            }
+            
+            const params = new URLSearchParams()
+            if (route.name === 'ProductDetail') {
+                params.append('featured', 'true')
+                params.append('limit', '8')
+                if (excludeProductId) {
+                    params.append('exclude', excludeProductId)
+                }
+            }
+            
+            const finalUrl = route.name === 'ProductDetail' ? `${apiUrl}?${params}` : apiUrl
+            console.log('🔍 Frontend - Final URL:', finalUrl)
+            
+            const { data, error: fetchError } = await useApi(finalUrl)
             if (fetchError.value) {
                 error.value = fetchError.value
             } else if (data.value && data.value.success) {
                 products.value = data.value.data.products
+                
+                // Si estamos en ProductDetail y no hay productos destacados suficientes, 
+                // obtener productos recientes como fallback
+                if (route.name === 'ProductDetail' && products.value.length < 4) {
+                    try {
+                        const fallbackUrl = excludeProductId 
+                            ? `/api/products/nuevo?exclude=${excludeProductId}&limit=8`
+                            : '/api/products/nuevo?limit=8'
+                            
+                        const { data: fallbackData } = await useApi(fallbackUrl)
+                        if (fallbackData.value && fallbackData.value.success) {
+                            // Combinar productos destacados con productos nuevos, evitando duplicados
+                            const currentIds = products.value.map(p => p.id)
+                            const newProducts = fallbackData.value.data.products.filter(p => !currentIds.includes(p.id))
+                            products.value = [...products.value, ...newProducts].slice(0, 8)
+                        }
+                    } catch (fallbackError) {
+                        console.warn('Error obteniendo productos de fallback:', fallbackError)
+                    }
+                }
             }
         } catch (err) {
             error.value = err.message
@@ -51,8 +101,15 @@
         return '/img/placeholder.jpg'
     }
 
+    // Watcher para recargar productos cuando cambie el currentProductId
+    watch(() => props.currentProductId, () => {
+        if (route.name === 'ProductDetail') {
+            fetchProducts()
+        }
+    })
+
     onMounted(async () => {
-        await fetchNewProducts()
+        await fetchProducts()
 
         let contenedorScrollNuevos = document.querySelector('.vitrinaSlideNuevos')
         let itemIntoScroll = document.querySelector('.cajaElemento')
@@ -72,6 +129,14 @@
 
         checkOverflow(contenedorScrollNuevos, scrollIzquierdaNuevo, scrollDerechaNuevo)
         window.addEventListener('resize', () => checkOverflow(contenedorScrollNuevos, scrollIzquierdaNuevo, scrollDerechaNuevo))
+    })
+
+    // Watch para recargar productos cuando cambia la ruta
+    watch(() => route.params.id, async (newId, oldId) => {
+        if (newId !== oldId && route.name === 'ProductDetail') {
+            loading.value = true
+            await fetchProducts()
+        }
     })
 </script>
 
