@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue';
 import { useAdminApi } from '@/js/composables/useAdminApi.js';
 import mostrarNotificacion from '@/js/mensajeNotificacionFront.js';
+import { validateForm } from '@/js/composables/useValidateForm.js';
 
 const {
   getAdminCategories,
@@ -27,6 +28,9 @@ const selectedCategory = ref(null);
 const showDeleteConfirm = ref(false);
 const categoryToDelete = ref(null);
 
+// Estado de validaciones
+const formErrors = ref({});
+
 // Form data
 const categoryForm = ref({
   name: '',
@@ -34,6 +38,27 @@ const categoryForm = ref({
   type_size_id: '',
   is_active: true
 });
+
+// Reglas de validación para categorías
+const categoryValidationRules = {
+  name: {
+    required: true,
+    minLength: 2,
+    maxLength: 50
+  },
+  description: {
+    maxLength: 255
+  },
+  type_size_id: {
+    required: true
+  }
+};
+
+// Función de validación
+const validateCategoryForm = () => {
+  formErrors.value = validateForm(categoryForm.value, categoryValidationRules);
+  return Object.keys(formErrors.value).length === 0;
+};
 
 // Methods
 const loadCategories = async () => {
@@ -96,6 +121,7 @@ const resetForm = () => {
     type_size_id: '',
     is_active: true
   };
+  formErrors.value = {}; // Limpiar errores
 };
 
 const populateForm = (category) => {
@@ -108,6 +134,12 @@ const populateForm = (category) => {
 };
 
 const handleSubmit = async () => {
+  // Validar formulario antes de enviar
+  if (!validateCategoryForm()) {
+    mostrarNotificacion('Por favor corrige los errores en el formulario', 0);
+    return;
+  }
+
   let result;
   if (modalMode.value === 'create') {
     result = await createCategory(categoryForm.value);
@@ -374,22 +406,31 @@ onMounted(() => {
         <form @submit.prevent="handleSubmit">
           <div class="adminFormGroup">
             <label>Nombre de la Categoría *</label>
-            <input v-model="categoryForm.name" type="text" required />
+            <input v-model="categoryForm.name" type="text" @blur="validateCategoryForm" />
+            <div class="error" v-if="formErrors.name">
+              <p>{{ formErrors.name }}</p>
+            </div>
           </div>
 
           <div class="adminFormGroup">
             <label>Descripción</label>
-            <textarea v-model="categoryForm.description" rows="3" placeholder="Descripción opcional de la categoría"></textarea>
+            <textarea v-model="categoryForm.description" rows="3" placeholder="Descripción opcional de la categoría" @blur="validateCategoryForm"></textarea>
+            <div class="error" v-if="formErrors.description">
+              <p>{{ formErrors.description }}</p>
+            </div>
           </div>
 
           <div class="adminFormGroup">
-            <label>Tipo de Tallaje</label>
-            <select v-model="categoryForm.type_size_id">
-              <option value="">Sin tipo de tallaje específico</option>
+            <label>Tipo de Tallaje *</label>
+            <select v-model="categoryForm.type_size_id" @change="validateCategoryForm">
+              <option value="">Selecciona un tipo de tallaje</option>
               <option v-for="typeSize in typeSizes" :key="typeSize.id" :value="typeSize.id">
                 {{ typeSize.description }}
               </option>
             </select>
+            <div class="error" v-if="formErrors.type_size_id">
+              <p>{{ formErrors.type_size_id }}</p>
+            </div>
             <small style="color: #666; display: block; margin-top: 0.5rem;">
               Selecciona el tipo de tallaje que se utilizará para los productos de esta categoría
             </small>

@@ -4,6 +4,7 @@
     import { useApi } from '@/js/composables/useFetch.js'
     import { useUserStore } from '@/js/stores/userLogged.js'
     import { inputFromPasswordToText } from '@/js/inputFromPasswordToText.js'
+    import { validateForm } from '@/js/composables/useValidateForm.js'
 
     const router = useRouter()
     const userStore = useUserStore()
@@ -14,16 +15,33 @@
     })
 
     const isLoading = ref(false)
-    const errorMessage = ref('')
+    const errors = ref({})
+
+    // Reglas de validación para el formulario de login
+    const validationRules = {
+        email: { 
+            required: true, 
+            email: true 
+        },
+        password: { 
+            required: true, 
+            minLength: 6 
+        }
+    }
+
+    const validateFormData = () => {
+        errors.value = validateForm(form, validationRules)
+        return Object.keys(errors.value).length === 0
+    }
 
     const handleLogin = async () => {
-        if (!form.email || !form.password) {
-            errorMessage.value = 'Por favor ingresa tu correo y contraseña'
+        // Validar formulario antes de enviar
+        if (!validateFormData()) {
             return
         }
 
         isLoading.value = true
-        errorMessage.value = ''
+        errors.value = {}
 
         try {
             const { data, error } = await useApi('/api/auth/login', 'POST', {
@@ -32,7 +50,7 @@
             })
 
             if (error.value) {
-                errorMessage.value = 'Credenciales incorrectas'
+                errors.value.general = 'Credenciales incorrectas'
                 return
             }
 
@@ -42,10 +60,10 @@
                 
                 router.push('/')
             } else {
-                errorMessage.value = 'Error al iniciar sesión'
+                errors.value.general = 'Error al iniciar sesión'
             }
         } catch (err) {
-            errorMessage.value = 'Error de conexión'
+            errors.value.general = 'Error de conexión'
         } finally {
             isLoading.value = false
         }
@@ -59,11 +77,14 @@
             
             <div class="inputBlock">
                 <label for="">Correo electrónico</label>
-                <input type="email" v-model="form.email" :disabled="isLoading">
+                <input type="email" v-model="form.email" :disabled="isLoading" @blur="validateFormData">
+                <div class="error" v-if="errors.email">
+                    <p>{{ errors.email }}</p>
+                </div>
             </div>
             <div class="inputBlock" style="position: relative;">
                 <label for="">Contraseña</label>
-                <input type="password" v-model="form.password" :disabled="isLoading" @keyup.enter="handleLogin">
+                <input type="password" v-model="form.password" :disabled="isLoading" @keyup.enter="handleLogin" @blur="validateFormData">
                 <!-- Botón para mostrar/ocultar la contraseña -->
                 <span class="passwordEye">
                     <i
@@ -71,9 +92,12 @@
                         @click="inputFromPasswordToText($event.target)" 
                     ></i>
                 </span>
+                <div class="error" v-if="errors.password">
+                    <p>{{ errors.password }}</p>
+                </div>
             </div>
-            <div class="error" v-if="errorMessage">
-                <p>{{ errorMessage }}</p>
+            <div class="error" v-if="errors.general">
+                <p>{{ errors.general }}</p>
             </div>
             
             <div class="inputBlock">

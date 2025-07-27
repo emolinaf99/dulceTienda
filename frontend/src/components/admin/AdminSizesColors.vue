@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue';
 import { useAdminApi } from '@/js/composables/useAdminApi.js';
 import mostrarNotificacion from '@/js/mensajeNotificacionFront.js';
+import { validateForm } from '@/js/composables/useValidateForm.js';
 
 const {
   getAdminSizes,
@@ -34,6 +35,11 @@ const sizeModalMode = ref('create'); // create, edit
 const selectedTypeSize = ref(null);
 const selectedSize = ref(null);
 
+// Estado de validaciones
+const sizeFormErrors = ref({});
+const typeSizeFormErrors = ref({});
+const colorFormErrors = ref({});
+
 // Form data
 const sizeForm = ref({
   name: '',
@@ -48,6 +54,53 @@ const colorForm = ref({
   name: '',
   hex_code: '#000000'
 });
+
+// Reglas de validación
+const sizeValidationRules = {
+  name: {
+    required: true,
+    minLength: 1,
+    maxLength: 10
+  },
+  type_size_id: {
+    required: true
+  }
+};
+
+const typeSizeValidationRules = {
+  description: {
+    required: true,
+    minLength: 2,
+    maxLength: 50
+  }
+};
+
+const colorValidationRules = {
+  name: {
+    required: true,
+    minLength: 2,
+    maxLength: 30
+  },
+  hex_code: {
+    required: true
+  }
+};
+
+// Funciones de validación
+const validateSizeForm = () => {
+  sizeFormErrors.value = validateForm(sizeForm.value, sizeValidationRules);
+  return Object.keys(sizeFormErrors.value).length === 0;
+};
+
+const validateTypeSizeForm = () => {
+  typeSizeFormErrors.value = validateForm(typeSizeForm.value, typeSizeValidationRules);
+  return Object.keys(typeSizeFormErrors.value).length === 0;
+};
+
+const validateColorForm = () => {
+  colorFormErrors.value = validateForm(colorForm.value, colorValidationRules);
+  return Object.keys(colorFormErrors.value).length === 0;
+};
 
 // Methods
 const loadSizes = async () => {
@@ -107,6 +160,7 @@ const resetSizeForm = () => {
     name: '',
     type_size_id: ''
   };
+  sizeFormErrors.value = {}; // Limpiar errores
 };
 
 const openTypeSizeModal = (mode = 'create', typeSize = null) => {
@@ -134,9 +188,16 @@ const resetTypeSizeForm = () => {
   typeSizeForm.value = {
     description: ''
   };
+  typeSizeFormErrors.value = {}; // Limpiar errores
 };
 
 const handleSizeSubmit = async () => {
+  // Validar formulario antes de enviar
+  if (!validateSizeForm()) {
+    mostrarNotificacion('Por favor corrige los errores en el formulario', 0);
+    return;
+  }
+
   let result;
   
   if (sizeModalMode.value === 'create') {
@@ -163,6 +224,12 @@ const handleSizeSubmit = async () => {
 };
 
 const handleTypeSizeSubmit = async () => {
+  // Validar formulario antes de enviar
+  if (!validateTypeSizeForm()) {
+    mostrarNotificacion('Por favor corrige los errores en el formulario', 0);
+    return;
+  }
+
   console.log('=== HANDLE TYPE SIZE SUBMIT START ===');
   console.log('Mode:', typeSizeModalMode.value);
   console.log('Selected TypeSize:', selectedTypeSize.value);
@@ -230,9 +297,16 @@ const resetColorForm = () => {
     name: '',
     hex_code: '#000000'
   };
+  colorFormErrors.value = {}; // Limpiar errores
 };
 
 const handleColorSubmit = async () => {
+  // Validar formulario antes de enviar
+  if (!validateColorForm()) {
+    mostrarNotificacion('Por favor corrige los errores en el formulario', 0);
+    return;
+  }
+
   let result;
   
   if (colorModalMode.value === 'create') {
@@ -597,7 +671,10 @@ onMounted(() => {
         <form @submit.prevent="handleTypeSizeSubmit">
           <div class="adminFormGroup">
             <label>Descripción del Tipo *</label>
-            <input v-model="typeSizeForm.description" type="text" required placeholder="ej. Ropa, Calzado, Accesorios" />
+            <input v-model="typeSizeForm.description" type="text" placeholder="ej. Ropa, Calzado, Accesorios" @blur="validateTypeSizeForm" />
+            <div class="error" v-if="typeSizeFormErrors.description">
+              <p>{{ typeSizeFormErrors.description }}</p>
+            </div>
             <small style="color: #666; display: block; margin-top: 0.5rem;">
               Ejemplos: "Ropa", "Calzado", "Accesorios", "Tallas Infantiles", etc.
             </small>
@@ -634,12 +711,15 @@ onMounted(() => {
         <form @submit.prevent="handleSizeSubmit">
           <div class="adminFormGroup">
             <label>Tipo de Talla *</label>
-            <select v-model="sizeForm.type_size_id" required>
+            <select v-model="sizeForm.type_size_id" @change="validateSizeForm">
               <option value="">Selecciona un tipo de talla</option>
               <option v-for="typeSize in typeSizes" :key="typeSize.id" :value="typeSize.id">
                 {{ typeSize.description }}
               </option>
             </select>
+            <div class="error" v-if="sizeFormErrors.type_size_id">
+              <p>{{ sizeFormErrors.type_size_id }}</p>
+            </div>
             <small v-if="typeSizes.length === 0" style="color: #dc3545; display: block; margin-top: 0.5rem;">
               Primero debes crear al menos un tipo de talla.
             </small>
@@ -647,7 +727,10 @@ onMounted(() => {
 
           <div class="adminFormGroup">
             <label>Nombre de la Talla *</label>
-            <input v-model="sizeForm.name" type="text" required placeholder="ej. XL, 42, Talla Única" />
+            <input v-model="sizeForm.name" type="text" placeholder="ej. XL, 42, Talla Única" @blur="validateSizeForm" />
+            <div class="error" v-if="sizeFormErrors.name">
+              <p>{{ sizeFormErrors.name }}</p>
+            </div>
             <small style="color: #666; display: block; margin-top: 0.5rem;">
               Ejemplos: "XS", "S", "M", "L", "XL", "38", "40", "42", "Talla Única", etc.
             </small>
@@ -684,14 +767,20 @@ onMounted(() => {
         <form @submit.prevent="handleColorSubmit">
           <div class="adminFormGroup">
             <label>Nombre del Color *</label>
-            <input v-model="colorForm.name" type="text" required placeholder="ej. Rojo Carmín" />
+            <input v-model="colorForm.name" type="text" placeholder="ej. Rojo Carmín" @blur="validateColorForm" />
+            <div class="error" v-if="colorFormErrors.name">
+              <p>{{ colorFormErrors.name }}</p>
+            </div>
           </div>
 
           <div class="adminFormGroup">
             <label>Código de Color *</label>
             <div style="display: flex; gap: 1rem; align-items: center;">
-              <input v-model="colorForm.hex_code" type="color" style="width: 60px; height: 40px; border: none; padding: 0;" />
-              <input v-model="colorForm.hex_code" type="text" placeholder="#FF0000" style="flex: 1;" />
+              <input v-model="colorForm.hex_code" type="color" style="width: 60px; height: 40px; border: none; padding: 0;" @change="validateColorForm" />
+              <input v-model="colorForm.hex_code" type="text" placeholder="#FF0000" style="flex: 1;" @blur="validateColorForm" />
+            </div>
+            <div class="error" v-if="colorFormErrors.hex_code">
+              <p>{{ colorFormErrors.hex_code }}</p>
             </div>
             <small style="color: #666; display: block; margin-top: 0.5rem;">
               Selecciona el color usando el selector o ingresa un código hexadecimal.

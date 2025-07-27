@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useAdminApi } from '@/js/composables/useAdminApi.js';
 import mostrarNotificacion from '@/js/mensajeNotificacionFront.js';
+import { validateForm } from '@/js/composables/useValidateForm.js';
 
 const {
   getAdminProducts,
@@ -36,6 +37,9 @@ const showDeleteConfirm = ref(false);
 const showDeactivateConfirm = ref(false);
 const productToDelete = ref(null);
 
+// Estado de validaciones
+const formErrors = ref({});
+
 // Nuevos estados para colores y variantes
 const selectedColors = ref([]);
 const colorImages = ref({}); // Objeto para almacenar imágenes por color
@@ -56,9 +60,39 @@ const productForm = ref({
   colorImages: [] // Array de {color_id, images}
 });
 
+// Reglas de validación para productos
+const productValidationRules = {
+  name: {
+    required: true,
+    minLength: 2,
+    maxLength: 100
+  },
+  description: {
+    required: true,
+    minLength: 10,
+    maxLength: 1000
+  },
+  price: {
+    required: true,
+    numeric: true
+  },
+  category_id: {
+    required: true
+  },
+  discount_percentage: {
+    numeric: true
+  }
+};
+
 // Computed
 const filteredProductsCount = computed(() => pagination.value.totalItems || 0);
 const apiBaseUrl = computed(() => import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000');
+
+// Función de validación
+const validateProductForm = () => {
+  formErrors.value = validateForm(productForm.value, productValidationRules);
+  return Object.keys(formErrors.value).length === 0;
+};
 
 // Methods
 const loadProducts = async () => {
@@ -177,6 +211,7 @@ const resetForm = () => {
   colorImages.value = {};
   availableSizes.value = [];
   colorSizeConfig.value = {};
+  formErrors.value = {}; // Limpiar errores
 };
 
 const populateForm = (product) => {
@@ -259,6 +294,12 @@ const populateForm = (product) => {
 
 const handleSubmit = async () => {
   try {
+    // Validar campos básicos del formulario
+    if (!validateProductForm()) {
+      mostrarNotificacion('Por favor corrige los errores en el formulario', 0);
+      return;
+    }
+    
     const formData = new FormData();
     
     // Validar que hay colores seleccionados
@@ -844,35 +885,50 @@ onMounted(() => {
         <form @submit.prevent="handleSubmit" v-if="modalMode !== 'view'">
           <div class="adminFormGroup">
             <label>Nombre del Producto *</label>
-            <input v-model="productForm.name" type="text" required />
+            <input v-model="productForm.name" type="text" @blur="validateProductForm" />
+            <div class="error" v-if="formErrors.name">
+              <p>{{ formErrors.name }}</p>
+            </div>
           </div>
 
           <div class="adminFormGroup">
-            <label>Descripción</label>
-            <textarea v-model="productForm.description" rows="3"></textarea>
+            <label>Descripción *</label>
+            <textarea v-model="productForm.description" rows="3" @blur="validateProductForm"></textarea>
+            <div class="error" v-if="formErrors.description">
+              <p>{{ formErrors.description }}</p>
+            </div>
           </div>
 
           <div class="adminFormRow">
             <div class="adminFormGroup">
               <label>Precio *</label>
-              <input v-model="productForm.price" type="number" step="0.01" required />
+              <input v-model="productForm.price" type="number" step="0.01" @blur="validateProductForm" />
+              <div class="error" v-if="formErrors.price">
+                <p>{{ formErrors.price }}</p>
+              </div>
             </div>
 
             <div class="adminFormGroup">
               <label>Descuento (%)</label>
-              <input v-model="productForm.discount_percentage" type="number" min="0" max="100" />
+              <input v-model="productForm.discount_percentage" type="number" min="0" max="100" @blur="validateProductForm" />
+              <div class="error" v-if="formErrors.discount_percentage">
+                <p>{{ formErrors.discount_percentage }}</p>
+              </div>
             </div>
           </div>
 
 
           <div class="adminFormGroup">
             <label>Categoría *</label>
-            <select v-model="productForm.category_id" @change="handleCategoryChange" required>
+            <select v-model="productForm.category_id" @change="handleCategoryChange" @blur="validateProductForm">
               <option value="">Selecciona una categoría</option>
               <option v-for="category in categories" :key="category.id" :value="category.id">
                 {{ category.name }}
               </option>
             </select>
+            <div class="error" v-if="formErrors.category_id">
+              <p>{{ formErrors.category_id }}</p>
+            </div>
           </div>
 
           <!-- Configuración por Color -->

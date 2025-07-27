@@ -3,6 +3,7 @@
     import { RouterLink, RouterView, useRouter } from 'vue-router'
     import { useApi } from '@/js/composables/useFetch.js'
     import { useUserStore } from '@/js/stores/userLogged.js'
+    import { validateForm } from '@/js/composables/useValidateForm.js'
 
     const router = useRouter()
     const userStore = useUserStore()
@@ -15,26 +16,44 @@
     })
 
     const isLoading = ref(false)
-    const errorMessage = ref('')
+    const errors = ref({})
+
+    // Reglas de validación para el formulario de registro
+    const validationRules = {
+        name: { 
+            required: true, 
+            minLength: 2,
+            maxLength: 50
+        },
+        email: { 
+            required: true, 
+            email: true 
+        },
+        password: { 
+            required: true, 
+            minLength: 6,
+            hasNumber: true,
+            hasSpecialChar: true
+        },
+        confirmPassword: { 
+            required: true, 
+            match: 'password'
+        }
+    }
+
+    const validateFormData = () => {
+        errors.value = validateForm(form, validationRules)
+        return Object.keys(errors.value).length === 0
+    }
 
     const handleRegister = async () => {
-        if (!form.name || !form.email || !form.password || !form.confirmPassword) {
-            errorMessage.value = 'Por favor completa todos los campos'
-            return
-        }
-
-        if (form.password !== form.confirmPassword) {
-            errorMessage.value = 'Las contraseñas no coinciden'
-            return
-        }
-
-        if (form.password.length < 6) {
-            errorMessage.value = 'La contraseña debe tener al menos 6 caracteres'
+        // Validar formulario antes de enviar
+        if (!validateFormData()) {
             return
         }
 
         isLoading.value = true
-        errorMessage.value = ''
+        errors.value = {}
 
         try {
             const { data, error } = await useApi('/api/auth/register', 'POST', {
@@ -44,7 +63,7 @@
             })
 
             if (error.value) {
-                errorMessage.value = error.value.message || 'Error al registrar usuario'
+                errors.value.general = error.value.message || 'Error al registrar usuario'
                 return
             }
 
@@ -54,10 +73,10 @@
                 
                 router.push('/')
             } else {
-                errorMessage.value = 'Error al registrar usuario'
+                errors.value.general = 'Error al registrar usuario'
             }
         } catch (err) {
-            errorMessage.value = 'Error de conexión'
+            errors.value.general = 'Error de conexión'
         } finally {
             isLoading.value = false
         }
@@ -70,23 +89,35 @@
         <div class="bloqueLogin">
             <div class="inputBlock">
                 <label for="">Nombre</label>
-                <input type="text" v-model="form.name" :disabled="isLoading">
+                <input type="text" v-model="form.name" :disabled="isLoading" @blur="validateFormData">
+                <div class="error" v-if="errors.name">
+                    <p>{{ errors.name }}</p>
+                </div>
             </div>
             <div class="inputBlock">
                 <label for="">Correo electrónico</label>
-                <input type="email" v-model="form.email" :disabled="isLoading">
+                <input type="email" v-model="form.email" :disabled="isLoading" @blur="validateFormData">
+                <div class="error" v-if="errors.email">
+                    <p>{{ errors.email }}</p>
+                </div>
             </div>
             <div class="inputBlock">
                 <label for="">Contraseña</label>
-                <input type="password" v-model="form.password" :disabled="isLoading">
+                <input type="password" v-model="form.password" :disabled="isLoading" @blur="validateFormData">
+                <div class="error" v-if="errors.password">
+                    <p>{{ errors.password }}</p>
+                </div>
             </div>
             <div class="inputBlock">
                 <label for="">Confirmar Contraseña</label>
-                <input type="password" v-model="form.confirmPassword" :disabled="isLoading" @keyup.enter="handleRegister">
+                <input type="password" v-model="form.confirmPassword" :disabled="isLoading" @keyup.enter="handleRegister" @blur="validateFormData">
+                <div class="error" v-if="errors.confirmPassword">
+                    <p>{{ errors.confirmPassword }}</p>
+                </div>
             </div>
             
-            <div class="error" v-if="errorMessage">
-                <p>{{ errorMessage }}</p>
+            <div class="error" v-if="errors.general">
+                <p>{{ errors.general }}</p>
             </div>
             
             <div class="inputBlock">
