@@ -1,4 +1,4 @@
-import { Favorite, Product, Category } from '../models/associations.js';
+import { Favorite, Product, Category, ProductVariant, Size, Color, ImgColorProduct } from '../models/associations.js';
 import { validationResult } from 'express-validator';
 
 export const getFavorites = async (req, res) => {
@@ -15,6 +15,33 @@ export const getFavorites = async (req, res) => {
               model: Category,
               as: 'category',
               attributes: ['id', 'name']
+            },
+            {
+              model: ProductVariant,
+              as: 'variants',
+              include: [
+                {
+                  model: Size,
+                  as: 'size',
+                  attributes: ['id', 'name']
+                },
+                {
+                  model: Color,
+                  as: 'color',
+                  attributes: ['id', 'name', 'hex_code']
+                }
+              ]
+            },
+            {
+              model: ImgColorProduct,
+              as: 'colorImages',
+              include: [
+                {
+                  model: Color,
+                  as: 'color',
+                  attributes: ['id', 'name']
+                }
+              ]
             }
           ]
         }

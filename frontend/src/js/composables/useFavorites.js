@@ -102,7 +102,11 @@ export function useFavorites() {
         return []
       }
       
-      return data.value?.success ? data.value.data.favorites : []
+      if (data.value?.success && data.value.data.favorites) {
+        // Mapear los favoritos para extraer solo el producto
+        return data.value.data.favorites.map(favorite => favorite.product)
+      }
+      return []
     } catch (err) {
       error.value = err.message
       return []

@@ -1,4 +1,4 @@
-import { Cart, Product, Category, Size, Color } from '../models/associations.js';
+import { Cart, Product, Category, Size, Color, ImgColorProduct } from '../models/associations.js';
 import { validationResult } from 'express-validator';
 
 export const getCart = async (req, res) => {
@@ -14,6 +14,17 @@ export const getCart = async (req, res) => {
               model: Category,
               as: 'category',
               attributes: ['id', 'name']
+            },
+            {
+              model: ImgColorProduct,
+              as: 'colorImages',
+              include: [
+                {
+                  model: Color,
+                  as: 'color',
+                  attributes: ['id', 'name']
+                }
+              ]
             }
           ]
         },
@@ -31,7 +42,15 @@ export const getCart = async (req, res) => {
     });
 
     let total = 0;
+    console.log('🛒 [BACKEND] Cart items found:', cartItems.length);
+    if (cartItems.length > 0) {
+      console.log('🛒 [BACKEND] First item structure:', JSON.stringify(cartItems[0].toJSON(), null, 2));
+    }
+
     const itemsWithPricing = cartItems.map(item => {
+      console.log('🛒 [BACKEND] Processing item:', item.product.name);
+      console.log('🛒 [BACKEND] Item colorImages:', item.product.colorImages?.length || 0);
+      
       let unitPrice = item.product.price;
       
       if (req.user.role === 'mayorista' && item.product.discount_percentage > 0) {
@@ -68,8 +87,12 @@ export const getCart = async (req, res) => {
 
 export const addToCart = async (req, res) => {
   try {
+    console.log('🛒 [BACKEND] Datos recibidos en addToCart:', req.body);
+    console.log('🛒 [BACKEND] Usuario:', req.user?.id, req.user?.email);
+    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('🛒 [BACKEND] Errores de validación:', errors.array());
       return res.status(400).json({
         success: false,
         message: 'Datos de entrada inválidos',
@@ -78,6 +101,7 @@ export const addToCart = async (req, res) => {
     }
 
     const { product_id, quantity, size_id, color_id } = req.body;
+    console.log('🛒 [BACKEND] IDs extraídos:', { product_id, quantity, size_id, color_id });
 
     // Verificar que el producto existe y está activo
     const product = await Product.findOne({
@@ -85,29 +109,35 @@ export const addToCart = async (req, res) => {
     });
 
     if (!product) {
+      console.log('🛒 [BACKEND] Producto no encontrado:', product_id);
       return res.status(404).json({
         success: false,
         message: 'Producto no encontrado'
       });
     }
+    console.log('🛒 [BACKEND] Producto encontrado:', product.name);
 
     // Verificar que la talla existe
     const size = await Size.findByPk(size_id);
     if (!size) {
+      console.log('🛒 [BACKEND] Talla no encontrada:', size_id);
       return res.status(400).json({
         success: false,
         message: 'Talla no válida'
       });
     }
+    console.log('🛒 [BACKEND] Talla encontrada:', size.name);
 
     // Verificar que el color existe
     const color = await Color.findByPk(color_id);
     if (!color) {
+      console.log('🛒 [BACKEND] Color no encontrado:', color_id);
       return res.status(400).json({
         success: false,
         message: 'Color no válido'
       });
     }
+    console.log('🛒 [BACKEND] Color encontrado:', color.name);
 
     // Verificar que existe una variante del producto con esa talla y color
     // Esto depende de cómo esté estructurado tu sistema de variantes
@@ -125,15 +155,17 @@ export const addToCart = async (req, res) => {
 
     if (existingCartItem) {
       const newQuantity = existingCartItem.quantity + quantity;
+      console.log(`🛒 [BACKEND] Item existente encontrado. Cantidad actual: ${existingCartItem.quantity}, nueva cantidad: ${newQuantity}`);
       
       await existingCartItem.update({ quantity: newQuantity });
       
       res.json({
         success: true,
-        message: 'Cantidad actualizada en el carrito',
+        message: `Cantidad actualizada en el carrito (${newQuantity} unidades)`,
         data: { cart_item: existingCartItem }
       });
     } else {
+      console.log('🛒 [BACKEND] Creando nuevo item en el carrito');
       const cartItem = await Cart.create({
         user_id: req.user.id,
         product_id,
