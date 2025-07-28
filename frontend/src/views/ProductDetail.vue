@@ -1148,7 +1148,7 @@
                                         :disabled="cartLoading"
                                     ></i>
                                 </div>
-                                <div class="cuadroColor cuadroCantidad" :style="{ backgroundColor: '#f06baa', color: 'white' }">
+                                <div class="cuadroColor cuadroCantidad" :style="{ backgroundColor: 'white', color: 'black' }">
                                     <span v-if="cartLoading">
                                         <i class="fas fa-spinner fa-spin"></i>
                                     </span>

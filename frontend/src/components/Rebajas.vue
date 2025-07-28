@@ -1,6 +1,6 @@
 
 <script setup>
-    import {reactive,ref,onMounted, watch} from 'vue'
+    import {reactive,ref,onMounted, watch, computed} from 'vue'
     import { RouterLink, RouterView, useRoute} from 'vue-router'
     import {scrollearConClick} from '/src/js/scrollWithClick'
     import { useApi } from '/src/js/composables/useFetch.js'
@@ -9,6 +9,11 @@
     const products = ref([])
     const loading = ref(true)
     const error = ref(null)
+    
+    // Computed para determinar si se debe mostrar la sección
+    const shouldShowSection = computed(() => {
+        return !loading.value && !error.value && products.value.length > 0
+    })
 
     const fetchSaleProducts = async () => {
         try {
@@ -74,7 +79,7 @@
 
 <template>
     
-    <section class="seccionElementos">
+    <section v-if="shouldShowSection" class="seccionElementos">
         <h4>REBAJAS</h4>
         <div class="sectionSlide">
             <div class="botonesSlide">
@@ -82,26 +87,22 @@
                 <i class="fa-solid fa-chevron-right scrollDerechaRebajas"></i>
             </div>
             <div class="vitrinaSlide vitrinaSlideRebajas">
-                <div v-if="loading" class="loading-message">Cargando productos...</div>
-                <div v-else-if="error" class="error-message">Error: {{ error }}</div>
-                <template v-else>
-                    <RouterLink 
-                        v-for="product in products" 
-                        :key="product.id" 
-                        :to="`/products/${product.id}`" 
-                        class="cajaElemento"
-                    >
-                        <img :src="getMainImage(product)" :alt="product.name">
-                        <div class="itemData">
-                            <div class="nameItem">{{ product.name }}</div>
-                            <div class="priceItem">
-                                <span v-if="product.discount_percentage > 0" class="original-price">{{ formatPrice(product.price) }}</span>
-                                <span class="discounted-price">{{ formatPrice(getDiscountedPrice(product)) }}</span>
-                                <span v-if="product.discount_percentage > 0" class="discount-badge">-{{ Math.floor(product.discount_percentage) }}%</span>
-                            </div>
+                <RouterLink 
+                    v-for="product in products" 
+                    :key="product.id" 
+                    :to="`/products/${product.id}`" 
+                    class="cajaElemento"
+                >
+                    <img :src="getMainImage(product)" :alt="product.name">
+                    <div class="itemData">
+                        <div class="nameItem">{{ product.name }}</div>
+                        <div class="priceItem">
+                            <span v-if="product.discount_percentage > 0" class="original-price">{{ formatPrice(product.price) }}</span>
+                            <span class="discounted-price">{{ formatPrice(getDiscountedPrice(product)) }}</span>
+                            <span v-if="product.discount_percentage > 0" class="discount-badge">-{{ Math.floor(product.discount_percentage) }}%</span>
                         </div>
-                    </RouterLink>
-                </template>
+                    </div>
+                </RouterLink>
             </div>
         </div>
         

@@ -52,10 +52,12 @@
             <img 
               v-if="!category.image"
               :src="`/img/percha.png`" 
+              :alt="category.name"
             >
             <img 
               v-else
-              :src="`/img/${category.image}`" 
+              :src="`/uploads/categories/${category.image}`" 
+              :alt="category.name"
             >
 
             <p>{{ category.name }}</p>

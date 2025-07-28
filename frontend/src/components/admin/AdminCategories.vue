@@ -36,8 +36,14 @@ const categoryForm = ref({
   name: '',
   description: '',
   type_size_id: '',
-  is_active: true
+  is_active: true,
+  image: null
 });
+
+// Estado para manejo de imagen
+const selectedFile = ref(null);
+const imagePreview = ref(null);
+const fileInputRef = ref(null);
 
 // Reglas de validación para categorías
 const categoryValidationRules = {
@@ -119,9 +125,15 @@ const resetForm = () => {
     name: '',
     description: '',
     type_size_id: '',
-    is_active: true
+    is_active: true,
+    image: null
   };
   formErrors.value = {}; // Limpiar errores
+  selectedFile.value = null;
+  imagePreview.value = null;
+  if (fileInputRef.value) {
+    fileInputRef.value.value = '';
+  }
 };
 
 const populateForm = (category) => {
@@ -129,8 +141,61 @@ const populateForm = (category) => {
     name: category.name || '',
     description: category.description || '',
     type_size_id: category.type_size_id || '',
-    is_active: category.is_active !== false
+    is_active: category.is_active !== false,
+    image: category.image || null
   };
+  
+  // Mostrar imagen existente
+  if (category.image) {
+    imagePreview.value = `/uploads/categories/${category.image}`;
+  } else {
+    imagePreview.value = null;
+  }
+  
+  selectedFile.value = null;
+  if (fileInputRef.value) {
+    fileInputRef.value.value = '';
+  }
+};
+
+// Función para manejar selección de archivo
+const handleFileSelect = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    // Validar tipo de archivo
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      mostrarNotificacion('Solo se permiten archivos de imagen (JPEG, PNG, WebP)', 0);
+      event.target.value = '';
+      return;
+    }
+
+    // Validar tamaño (5MB máximo)
+    if (file.size > 5 * 1024 * 1024) {
+      mostrarNotificacion('El archivo es demasiado grande. Máximo 5MB', 0);
+      event.target.value = '';
+      return;
+    }
+
+    selectedFile.value = file;
+    
+    // Crear preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      imagePreview.value = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+// Función para eliminar imagen seleccionada
+const removeImage = () => {
+  selectedFile.value = null;
+  imagePreview.value = null;
+  categoryForm.value.image = null;
+  if (fileInputRef.value) {
+    fileInputRef.value.value = '';
+  }
 };
 
 const handleSubmit = async () => {
@@ -140,11 +205,26 @@ const handleSubmit = async () => {
     return;
   }
 
+  // Crear FormData para enviar archivos
+  const formData = new FormData();
+  formData.append('name', categoryForm.value.name);
+  formData.append('description', categoryForm.value.description || '');
+  formData.append('type_size_id', categoryForm.value.type_size_id);
+  formData.append('is_active', categoryForm.value.is_active);
+  
+  // Agregar imagen si se seleccionó una nueva
+  if (selectedFile.value) {
+    formData.append('image', selectedFile.value);
+  } else if (categoryForm.value.image && modalMode.value === 'edit') {
+    // Mantener imagen existente
+    formData.append('image', categoryForm.value.image);
+  }
+
   let result;
   if (modalMode.value === 'create') {
-    result = await createCategory(categoryForm.value);
+    result = await createCategory(formData);
   } else if (modalMode.value === 'edit') {
-    result = await updateCategory(selectedCategory.value.id, categoryForm.value);
+    result = await updateCategory(selectedCategory.value.id, formData);
   }
 
   if (result) {
@@ -433,6 +513,39 @@ onMounted(() => {
             </div>
             <small style="color: #666; display: block; margin-top: 0.5rem;">
               Selecciona el tipo de tallaje que se utilizará para los productos de esta categoría
+            </small>
+          </div>
+
+          <!-- Sección de imagen -->
+          <div class="adminFormGroup">
+            <label>Imagen de la Categoría</label>
+            
+            <!-- Preview de imagen -->
+            <div v-if="imagePreview" class="imagePreviewContainer">
+              <img :src="imagePreview" alt="Preview" class="imagePreview" />
+              <button type="button" @click="removeImage" class="removeImageBtn">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            
+            <!-- Input de archivo -->
+            <div class="fileInputContainer">
+              <input 
+                ref="fileInputRef"
+                type="file" 
+                @change="handleFileSelect" 
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                class="fileInput"
+                id="categoryImage"
+              />
+              <label for="categoryImage" class="fileInputLabel">
+                <i class="fas fa-cloud-upload-alt"></i>
+                {{ imagePreview ? 'Cambiar imagen' : 'Seleccionar imagen' }}
+              </label>
+            </div>
+            
+            <small style="color: #666; display: block; margin-top: 0.5rem;">
+              Formatos permitidos: JPEG, PNG, WebP. Tamaño máximo: 5MB
             </small>
           </div>
 

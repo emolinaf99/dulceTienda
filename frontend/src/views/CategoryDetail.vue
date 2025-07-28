@@ -117,11 +117,7 @@ const toggleColor = (colorId) => {
       <p>{{ error }}</p>
     </div>
     
-    <div v-else-if="!loading && products.length === 0" class="">
-      <p>No hay productos disponibles en esta categoría</p>
-    </div>
-    
-    <div v-else class="contentContainer">
+    <div v-else-if="!loading" class="contentContainer">
       <!-- Sidebar de filtros para desktop -->
       <aside class="filterSidebar desktop-only">
         <div class="filterSection">
@@ -196,7 +192,23 @@ const toggleColor = (colorId) => {
       
       <!-- Contenido principal -->
       <main class="mainContent">
-        <div class="sectionSlide">
+        <div v-if="products.length === 0" class="noProductsMessage">
+          <div class="emptyState">
+            <i class="fas fa-search" style="font-size: 3rem; color: #ddd; margin-bottom: 1rem;"></i>
+            <h4 style="color: #666; margin-bottom: 0.5rem;">No hay productos disponibles</h4>
+            <p style="color: #999; margin-bottom: 1.5rem;">
+              {{ appliedFilters && Object.keys(appliedFilters).length > 0 
+                ? 'No se encontraron productos con los filtros aplicados. Intenta ajustar los filtros o limpiarlos.' 
+                : 'No hay productos disponibles en esta categoría en este momento.' }}
+            </p>
+            <button v-if="appliedFilters && Object.keys(appliedFilters).length > 0" @click="handleClearFilters" class="btnLimpiar">
+              <i class="fas fa-refresh" style="margin-right: 0.5rem;"></i>
+              Limpiar filtros
+            </button>
+          </div>
+        </div>
+        
+        <div v-else class="sectionSlide">
           <div class="vitrinaSlide vitrinaSlideNuevos">
             <RouterLink 
               v-for="product in products" 
@@ -675,6 +687,40 @@ const toggleColor = (colorId) => {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
+}
+
+/* Estado vacío cuando no hay productos */
+.noProductsMessage {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  padding: 2rem;
+}
+
+.emptyState {
+  text-align: center;
+  max-width: 400px;
+}
+
+.emptyState h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+.emptyState p {
+  margin: 0 0 1.5rem 0;
+  line-height: 1.5;
+}
+
+.emptyState .btnLimpiar {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 /* Filter modal for mobile/tablet */

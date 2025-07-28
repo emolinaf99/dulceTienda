@@ -36,6 +36,27 @@ export const uploadProductImages = multer({
   }
 }).any();
 
+// Storage específico para categorías
+const categoryStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, '../public/uploads/categories'));
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const extension = path.extname(file.originalname);
+    cb(null, `category-${uniqueSuffix}${extension}`);
+  }
+});
+
+export const uploadCategoryImage = multer({
+  storage: categoryStorage,
+  fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB
+    files: 1 // máximo 1 archivo para categorías
+  }
+}).single('image');
+
 export const handleMulterError = (error, req, res, next) => {
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {

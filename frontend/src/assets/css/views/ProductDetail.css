@@ -176,11 +176,11 @@
 /* Modificaciones para los controles de cantidad cuando está en carrito */
 .cartQuantityControls .cuadroCantidad {
     border: 2px solid #f06baa;
-    font-weight: bold;
+    /* font-weight: bold; */
 }
 
 .cartQuantityControls .flechasCantidad {
-    color: black;
+    color: #988c8c;
 }
 
 .cartQuantityControls .flechasCantidad i:hover {

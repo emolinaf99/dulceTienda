@@ -214,7 +214,13 @@ export const createCategory = async (req, res) => {
       });
     }
 
-    const { name, description, image, sort_order = 0, type = 'normal', type_size_id } = req.body;
+    const { name, description, sort_order = 0, type = 'normal', type_size_id } = req.body;
+    
+    // Manejar archivo de imagen subido
+    let image = req.body.image; // Para caso de edición sin nueva imagen
+    if (req.file) {
+      image = req.file.filename; // Usar nueva imagen subida
+    }
 
     const existingCategory = await Category.findOne({ where: { name } });
     if (existingCategory) {
@@ -268,7 +274,13 @@ export const updateCategory = async (req, res) => {
       });
     }
 
-    const { name, description, image, sort_order, type, is_active, type_size_id } = req.body;
+    const { name, description, sort_order, type, is_active, type_size_id } = req.body;
+    
+    // Manejar archivo de imagen subido
+    let image = req.body.image; // Mantener imagen existente si no se sube nueva
+    if (req.file) {
+      image = req.file.filename; // Usar nueva imagen subida
+    }
 
     if (name && name !== category.name) {
       const existingCategory = await Category.findOne({ 
