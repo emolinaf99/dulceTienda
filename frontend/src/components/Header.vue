@@ -97,6 +97,9 @@
             
             <RouterLink to="/wishlist"><img src="/img/heartIcon.png" title="Favoritos"></RouterLink>
             <RouterLink to="/cart"><img src="/img/shoppingBag.png" title="Carrito"></RouterLink>
+            <RouterLink to="/orders" v-if="userLogged" title="Mis Pedidos">
+                <i class="fas fa-receipt" style="font-size: 18px; color: #333;"></i>
+            </RouterLink>
             <div class="logout-btn" v-if="userLogged"><img @click="handleLogout" src="/img/logout.png" title="Cerrar sesión"></div>
             
         </div>

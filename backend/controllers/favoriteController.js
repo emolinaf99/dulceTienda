@@ -1,6 +1,15 @@
 import { Favorite, Product, Category, ProductVariant, Size, Color, ImgColorProduct } from '../models/associations.js';
 import { validationResult } from 'express-validator';
 
+// Helper function para calcular el precio final con descuento
+const calculateFinalPrice = (product) => {
+  let finalPrice = product.price;
+  if (product.discount_percentage > 0) {
+    finalPrice = product.price - (product.price * product.discount_percentage / 100);
+  }
+  return finalPrice;
+};
+
 export const getFavorites = async (req, res) => {
   try {
     const favorites = await Favorite.findAll({
@@ -50,19 +59,13 @@ export const getFavorites = async (req, res) => {
     });
 
     const favoritesWithPricing = favorites.map(favorite => {
-      let finalPrice = favorite.product.price;
-      
-      if (req.user.role === 'mayorista' && favorite.product.discount_percentage > 0) {
-        finalPrice = favorite.product.price - (favorite.product.price * favorite.product.discount_percentage / 100);
-      } else if (favorite.product.discount_percentage > 0) {
-        finalPrice = favorite.product.price - (favorite.product.price * favorite.product.discount_percentage / 100);
-      }
+      const productData = favorite.product.toJSON();
 
       return {
         ...favorite.toJSON(),
         product: {
-          ...favorite.product.toJSON(),
-          final_price: finalPrice
+          ...productData,
+          final_price: calculateFinalPrice(productData)
         }
       };
     });

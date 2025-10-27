@@ -158,7 +158,7 @@ CREATE TABLE `favorites` (
 
 ---
 
--- Table: orders
+-- Table: orders (ACTUALIZADA con nuevas columnas para checkout)
 CREATE TABLE `orders` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `user_id` INT NOT NULL,
@@ -168,8 +168,12 @@ CREATE TABLE `orders` (
   `discount_amount` DECIMAL(10, 2) DEFAULT 0,
   `total` DECIMAL(10, 2) NOT NULL,
   `shipping_address` JSON NOT NULL,
-  `payment_method` VARCHAR(50),
+  `billing_address` JSON NULL, -- NUEVA: Dirección de facturación (cuando es diferente a la de envío)
+  `delivery_method` ENUM('envio', 'pickup') DEFAULT 'envio', -- NUEVA: Método de entrega
+  `payment_method` ENUM('pse', 'mercado_pago', 'wompi') NOT NULL, -- MODIFICADA: Cambiada de VARCHAR a ENUM
   `payment_status` ENUM('pending', 'paid', 'failed', 'refunded') DEFAULT 'pending',
+  `customer_email` VARCHAR(255) NOT NULL, -- NUEVA: Email del cliente para confirmación
+  `newsletter_consent` BOOLEAN DEFAULT FALSE, -- NUEVA: Consentimiento para newsletter
   `notes` TEXT,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -195,3 +199,65 @@ CREATE TABLE `order_items` (
   FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 );
+
+---
+
+-- DOCUMENTACIÓN DE CAMBIOS EN ORDERS (2024)
+-- ============================================
+
+-- NUEVAS COLUMNAS AGREGADAS:
+-- 
+-- 1. billing_address (JSON NULL):
+--    Almacena la dirección de facturación cuando es diferente a la de envío
+--    Estructura JSON ejemplo:
+--    {
+--      "country": "Colombia",
+--      "firstName": "Juan",
+--      "lastName": "Pérez",
+--      "document": "12345678",
+--      "address": "Calle 123 #45-67",
+--      "addressDetails": "Apartamento 301",
+--      "city": "Bogotá",
+--      "department": "Cundinamarca",
+--      "postalCode": "110111",
+--      "phone": "3001234567"
+--    }
+--
+-- 2. delivery_method (ENUM('envio', 'pickup') DEFAULT 'envio'):
+--    Método de entrega seleccionado por el cliente
+--    - 'envio': Envío a domicilio
+--    - 'pickup': Recogida en tienda
+--
+-- 3. customer_email (VARCHAR(255) NOT NULL):
+--    Email del cliente para envío de confirmaciones de orden
+--    Incluye validación de formato de email
+--
+-- 4. newsletter_consent (BOOLEAN DEFAULT FALSE):
+--    Consentimiento del cliente para recibir newsletter
+--    Almacena la decisión explícita del usuario
+--
+-- COLUMNAS MODIFICADAS:
+--
+-- 1. payment_method (VARCHAR → ENUM('pse', 'mercado_pago', 'wompi')):
+--    Cambio de VARCHAR a ENUM para restringir valores válidos
+--    - 'pse': PSE (Pagos Seguros en Línea)
+--    - 'mercado_pago': Mercado Pago
+--    - 'wompi': Wompi
+--
+-- ESTRUCTURA JSON DE shipping_address:
+-- {
+--   "country": "Colombia",
+--   "firstName": "María",
+--   "lastName": "García",
+--   "document": "87654321",
+--   "address": "Carrera 45 #67-89",
+--   "addressDetails": "Casa 2B",
+--   "city": "Medellín",
+--   "department": "Antioquia",
+--   "postalCode": "050001",
+--   "phone": "3009876543"
+-- }
+--
+-- MIGRACIÓN APLICADA: 002-update-orders.js
+-- Fecha: 2024
+-- Propósito: Agregar campos del formulario de checkout al sistema de órdenes

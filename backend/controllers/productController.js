@@ -6,6 +6,29 @@ import fSync from 'fs';
 import path from 'path';
 import sequelize from '../config/database.js';
 
+// Helper function para calcular el precio final con descuento
+const calculateFinalPrice = (product) => {
+  let finalPrice = product.price;
+  if (product.discount_percentage > 0) {
+    finalPrice = product.price - (product.price * product.discount_percentage / 100);
+  }
+  return finalPrice;
+};
+
+// Helper function para agregar final_price a un producto
+const addFinalPrice = (product) => {
+  const productData = product.toJSON ? product.toJSON() : product;
+  return {
+    ...productData,
+    final_price: calculateFinalPrice(productData)
+  };
+};
+
+// Helper function para agregar final_price a un array de productos
+const addFinalPriceToProducts = (products) => {
+  return products.map(product => addFinalPrice(product));
+};
+
 export const getAllProducts = async (req, res) => {
   try {
     const {
@@ -99,10 +122,13 @@ export const getAllProducts = async (req, res) => {
 
     const totalPages = Math.ceil(count / limit);
 
+    // Agregar final_price a todos los productos
+    const productsWithFinalPrice = addFinalPriceToProducts(products);
+
     res.json({
       success: true,
       data: {
-        products,
+        products: productsWithFinalPrice,
         pagination: {
           currentPage: parseInt(page),
           totalPages,
@@ -169,8 +195,9 @@ export const getProductById = async (req, res) => {
       });
     }
 
+    // Calcular precio final con descuento (si aplica) para todos los usuarios
     let finalPrice = product.price;
-    if (req.user?.role === 'mayorista' && product.discount_percentage > 0) {
+    if (product.discount_percentage > 0) {
       finalPrice = product.price - (product.price * product.discount_percentage / 100);
     }
 
@@ -858,10 +885,13 @@ export const getNewProducts = async (req, res) => {
       group: ['Color.id']
     });
 
+    // Agregar final_price a todos los productos
+    const productsWithFinalPrice = addFinalPriceToProducts(products);
+
     res.json({
       success: true,
       data: {
-        products,
+        products: productsWithFinalPrice,
         pagination: {
           currentPage: parseInt(page),
           totalPages,
@@ -1001,10 +1031,13 @@ export const getSaleProducts = async (req, res) => {
       group: ['Color.id']
     });
 
+    // Agregar final_price a todos los productos
+    const productsWithFinalPrice = addFinalPriceToProducts(products);
+
     res.json({
       success: true,
       data: {
-        products,
+        products: productsWithFinalPrice,
         pagination: {
           currentPage: parseInt(page),
           totalPages,

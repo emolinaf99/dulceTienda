@@ -1,9 +1,19 @@
 
 
 <script setup>
-    import {reactive,ref,onMounted, watch} from 'vue'
-    import { RouterLink } from 'vue-router'
+    import { reactive, ref, onMounted, computed } from 'vue'
+    import { RouterLink, useRouter } from 'vue-router'
     import { validateForm } from '@/js/composables/useValidateForm.js'
+    import { useOrder } from '@/js/composables/useOrder.js'
+    import { useCart } from '@/js/composables/useCart.js'
+    import { useUserStore } from '@/js/stores/userLogged.js'
+    import mostrarNotificacion from '@/js/mensajeNotificacionFront.js'
+
+    // Composables
+    const { createOrder, loading: orderLoading } = useOrder()
+    const { cartItems, cartTotal, loadCart } = useCart()
+    const userStore = useUserStore()
+    const router = useRouter()
 
     // Estado del formulario
     const checkoutForm = reactive({
@@ -46,8 +56,16 @@
     })
 
     const errors = ref({})
-    const isLoading = ref(false)
     const showBillingForm = ref(false)
+
+    // Estados adicionales
+    const isAuthenticated = computed(() => userStore.isLoggedIn)
+    const isCartEmpty = computed(() => cartItems.value?.length === 0)
+
+    // Computed para verificar si se puede proceder con el checkout
+    const canProceedToCheckout = computed(() => {
+        return isAuthenticated.value && !isCartEmpty.value
+    })
 
     // Reglas de validación
     const validationRules = {
@@ -149,20 +167,103 @@
         }
     }
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
+        // Verificar autenticación y carrito
+        if (!canProceedToCheckout.value) {
+            if (!isAuthenticated.value) {
+                mostrarNotificacion('Debes iniciar sesión para proceder con la compra', 0)
+                router.push('/login')
+                return
+            }
+            if (isCartEmpty.value) {
+                mostrarNotificacion('Tu carrito está vacío', 0)
+                router.push('/cart')
+                return
+            }
+        }
+
+        // Validar formulario
         if (!validateFormData()) {
+            mostrarNotificacion('Por favor corrige los errores en el formulario', 0)
             return
         }
-        
-        // Aquí iría la lógica para procesar el checkout
-        console.log('Formulario válido, procesando checkout...', checkoutForm)
+
+        try {
+            console.log('🛒 [CHECKOUT] Procesando checkout...', checkoutForm)
+
+            const orderData = {
+                // Contacto
+                email: checkoutForm.email,
+                newsletter: checkoutForm.newsletter,
+                
+                // Información de envío
+                country: checkoutForm.country,
+                firstName: checkoutForm.firstName,
+                lastName: checkoutForm.lastName,
+                document: checkoutForm.document,
+                address: checkoutForm.address,
+                addressDetails: checkoutForm.addressDetails,
+                city: checkoutForm.city,
+                department: checkoutForm.department,
+                postalCode: checkoutForm.postalCode,
+                phone: checkoutForm.phone,
+                
+                // Información de facturación
+                billing: checkoutForm.billingAddress === 'different' ? checkoutForm.billing : null,
+                
+                // Opciones
+                deliveryMethod: checkoutForm.deliveryMethod,
+                paymentMethod: checkoutForm.paymentMethod,
+                billingAddress: checkoutForm.billingAddress
+            }
+
+            const result = await createOrder(orderData)
+
+            if (result.success) {
+                mostrarNotificacion('¡Orden creada exitosamente!', 1)
+                console.log('🛒 [CHECKOUT] Orden creada:', result.data)
+                
+                // Redireccionar a página de confirmación o pedidos
+                // router.push(`/orders/${result.data.order.id}`)
+                router.push('/orders')
+            } else {
+                console.error('🛒 [CHECKOUT] Error creando orden:', result)
+                
+                // Mostrar errores específicos del backend
+                if (result.errors && Array.isArray(result.errors)) {
+                    result.errors.forEach(error => {
+                        mostrarNotificacion(error.msg || error.message, 0)
+                    })
+                } else {
+                    mostrarNotificacion(result.message || 'Error al procesar la orden', 0)
+                }
+            }
+        } catch (error) {
+            console.error('🛒 [CHECKOUT] Error procesando checkout:', error)
+            mostrarNotificacion('Error de conexión al procesar la orden', 0)
+        }
     }
 
-    onMounted(() => {
+    onMounted(async () => {
+        // Cargar datos del usuario y carrito
+        await userStore.loadUserFromStorage()
+        
+        if (isAuthenticated.value) {
+            await loadCart()
+            
+            // Pre-llenar email si el usuario está autenticado
+            if (userStore.user?.email) {
+                checkoutForm.email = userStore.user.email
+            }
+        }
+
+        // Configurar visibilidad del formulario de facturación
         function visibilityOtherAddressForm() {
             const hiddenBlock = document.querySelector('.contFormHidden');
-            hiddenBlock.classList.toggle('visibleForm');
-            hiddenBlock.classList.toggle('hiddenForm');
+            if (hiddenBlock) {
+                hiddenBlock.classList.toggle('visibleForm');
+                hiddenBlock.classList.toggle('hiddenForm');
+            }
         }
 
         let radioDireccionFacturacion = document.getElementsByName('radio-dir')
@@ -387,8 +488,29 @@
                     <div class="error" v-if="errors.general">
                         <p>{{ errors.general }}</p>
                     </div>
-                    <button class="inputCheckout" @click="handleSubmit" :disabled="isLoading" style="background-color: #007bff; color: white; border: none; padding: 12px; cursor: pointer;">
-                        {{ isLoading ? 'PROCESANDO...' : 'FINALIZAR COMPRA' }}
+                    <button 
+                        class="inputCheckout" 
+                        @click="handleSubmit" 
+                        :disabled="orderLoading || !canProceedToCheckout" 
+                        style="background-color: #007bff; color: white; border: none; padding: 12px; cursor: pointer;"
+                        :style="{ 
+                            opacity: (orderLoading || !canProceedToCheckout) ? 0.6 : 1,
+                            cursor: (orderLoading || !canProceedToCheckout) ? 'not-allowed' : 'pointer'
+                        }"
+                    >
+                        <span v-if="orderLoading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            PROCESANDO...
+                        </span>
+                        <span v-else-if="!isAuthenticated">
+                            INICIA SESIÓN PARA CONTINUAR
+                        </span>
+                        <span v-else-if="isCartEmpty">
+                            CARRITO VACÍO
+                        </span>
+                        <span v-else>
+                            FINALIZAR COMPRA
+                        </span>
                     </button>
                 </div>
 

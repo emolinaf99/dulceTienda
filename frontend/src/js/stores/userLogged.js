@@ -16,22 +16,26 @@ export const useUserStore = defineStore('userLogged', {
             if (userInfo) {
                 this.userLogged = userInfo;
                 this.isAuthenticated = true;
-                // El token se maneja automáticamente por cookies, no necesitamos localStorage
+                // Guardar también en localStorage para compatibilidad con router guard
+                localStorage.setItem('user', JSON.stringify(userInfo));
+                localStorage.setItem('authToken', 'cookie-based'); // Indicador de que hay sesión
             }
         },
         clearUser() {
             this.userLogged = null;
             this.isAuthenticated = false;
+            // Limpiar localStorage
+            localStorage.removeItem('user');
+            localStorage.removeItem('authToken');
             // Las cookies se manejan automáticamente por el backend al hacer logout
         },
         async loadUserFromStorage() {
             // Verificar estado de autenticación con el backend usando cookies
             try {
                 const { data, error } = await useApi('/api/auth/profile', 'GET');
-                
+
                 if (!error.value && data.value?.success && data.value?.data?.user) {
-                    this.userLogged = data.value.data.user;
-                    this.isAuthenticated = true;
+                    this.setUser(data.value.data.user); // Usar setUser para guardar también en localStorage
                 } else {
                     this.clearUser();
                 }

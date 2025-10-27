@@ -147,7 +147,7 @@ const formatPrice = (price) => {
   if (isNaN(numericPrice) || numericPrice < 0) {
     return '$0'
   }
-  
+
   return new Intl.NumberFormat('es-CO', {
     style: 'currency',
     currency: 'COP',
@@ -155,17 +155,12 @@ const formatPrice = (price) => {
   }).format(numericPrice)
 }
 
-// Función para calcular precio con descuento
-const getDiscountedPrice = (product) => {
-  if (!product || typeof product.price !== 'number') {
-    return 0
-  }
-  
-  if (product.discount_percentage > 0) {
-    const discountedPrice = product.price - (product.price * product.discount_percentage / 100)
-    return discountedPrice
-  }
-  return product.price
+// Función para obtener el precio final (usa final_price del backend si existe)
+const getFinalPrice = (product) => {
+  if (!product) return 0
+
+  // Usar final_price del backend si existe, de lo contrario usar price
+  return product.final_price || product.price || 0
 }
 
 // Función para remover de favoritos
@@ -310,15 +305,18 @@ onMounted(async () => {
             <RouterLink :to="`/products/${product.id}`" class="productInfo">
               <p class="nameProduct">{{ product.name }}</p>
               <div class="priceContainer">
-                <p v-if="product.discount_percentage > 0" class="priceProduct discounted">
-                  {{ formatPrice(getDiscountedPrice(product)) }}
-                </p>
-                <p 
-                  class="priceProduct" 
-                  :class="{ 'original-price': product.discount_percentage > 0 }"
+                <!-- Precio original tachado si hay descuento -->
+                <p
+                  v-if="product.discount_percentage > 0"
+                  class="priceProduct original-price"
                 >
                   {{ formatPrice(product.price) }}
                 </p>
+                <!-- Precio final (con descuento aplicado si existe) -->
+                <p class="priceProduct" :class="{ 'discounted': product.discount_percentage > 0 }">
+                  {{ formatPrice(getFinalPrice(product)) }}
+                </p>
+                <!-- Badge de descuento -->
                 <span v-if="product.discount_percentage > 0" class="discount-badge">
                   -{{ Math.floor(product.discount_percentage) }}%
                 </span>

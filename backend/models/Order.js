@@ -40,13 +40,32 @@ const Order = sequelize.define('Order', {
     type: DataTypes.JSON,
     allowNull: false
   },
-  payment_method: {
-    type: DataTypes.STRING(50),
+  billing_address: {
+    type: DataTypes.JSON,
     allowNull: true
+  },
+  delivery_method: {
+    type: DataTypes.ENUM('envio', 'pickup'),
+    defaultValue: 'envio'
+  },
+  payment_method: {
+    type: DataTypes.ENUM('pse', 'mercado_pago', 'wompi'),
+    allowNull: false
   },
   payment_status: {
     type: DataTypes.ENUM('pending', 'paid', 'failed', 'refunded'),
     defaultValue: 'pending'
+  },
+  customer_email: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+    validate: {
+      isEmail: true
+    }
+  },
+  newsletter_consent: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   },
   notes: {
     type: DataTypes.TEXT,
@@ -79,20 +98,21 @@ const OrderItem = sequelize.define('OrderItem', {
       key: 'id'
     }
   },
+  size: {
+    type: DataTypes.STRING(10),
+    allowNull: false,
+  },
+  color: {
+    type: DataTypes.STRING(50),
+    allowNull: false,
+    
+  },
   quantity: {
     type: DataTypes.INTEGER,
     allowNull: false,
     validate: {
       min: 1
     }
-  },
-  size: {
-    type: DataTypes.STRING(10),
-    allowNull: false
-  },
-  color: {
-    type: DataTypes.STRING(50),
-    allowNull: false
   },
   unit_price: {
     type: DataTypes.DECIMAL(10, 2),

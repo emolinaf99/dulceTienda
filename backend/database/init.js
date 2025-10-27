@@ -56,33 +56,42 @@ const createDefaultTypeSizes = async () => {
 const createDefaultSizes = async () => {
   try {
     const sizesCount = await Size.count();
-    
+
     if (sizesCount === 0) {
-      // Obtener los IDs de los tipos de tallas
-      const prendasSuperiores = await TypeSize.findOne({ where: { description: 'PRENDAS SUPERIORES' } });
-      const prendasInferiores = await TypeSize.findOne({ where: { description: 'PRENDAS INFERIORES' } });
+      // Obtener los IDs de los tipos de tallas (usar los mismos nombres creados en createDefaultTypeSizes)
+      const tallajeLetras = await TypeSize.findOne({ where: { description: 'Tallaje por letras' } });
+      const tallajePantalones = await TypeSize.findOne({ where: { description: 'Tallaje para pantalones' } });
 
-      if (prendasSuperiores && prendasInferiores) {
-        const defaultSizes = [
-          // Tallas para prendas superiores
-          { name: 'XS', type_size_id: prendasSuperiores.id },
-          { name: 'S', type_size_id: prendasSuperiores.id },
-          { name: 'M', type_size_id: prendasSuperiores.id },
-          { name: 'L', type_size_id: prendasSuperiores.id },
-          { name: 'XL', type_size_id: prendasSuperiores.id },
-          { name: 'XXL', type_size_id: prendasSuperiores.id },
-          // Tallas para prendas inferiores
-          { name: '0', type_size_id: prendasInferiores.id },
-          { name: '2', type_size_id: prendasInferiores.id },
-          { name: '4', type_size_id: prendasInferiores.id },
-          { name: '6', type_size_id: prendasInferiores.id },
-          { name: '8', type_size_id: prendasInferiores.id },
-          { name: '10', type_size_id: prendasInferiores.id },
-          { name: '12', type_size_id: prendasInferiores.id },
-          { name: '14', type_size_id: prendasInferiores.id },
-          { name: '16', type_size_id: prendasInferiores.id }
-        ];
+      const defaultSizes = [];
 
+      // Tallas por letras
+      if (tallajeLetras) {
+        defaultSizes.push(
+          { name: 'XS', type_size_id: tallajeLetras.id },
+          { name: 'S', type_size_id: tallajeLetras.id },
+          { name: 'M', type_size_id: tallajeLetras.id },
+          { name: 'L', type_size_id: tallajeLetras.id },
+          { name: 'XL', type_size_id: tallajeLetras.id },
+          { name: 'XXL', type_size_id: tallajeLetras.id }
+        );
+      }
+
+      // Tallas para pantalones
+      if (tallajePantalones) {
+        defaultSizes.push(
+          { name: '0', type_size_id: tallajePantalones.id },
+          { name: '2', type_size_id: tallajePantalones.id },
+          { name: '4', type_size_id: tallajePantalones.id },
+          { name: '6', type_size_id: tallajePantalones.id },
+          { name: '8', type_size_id: tallajePantalones.id },
+          { name: '10', type_size_id: tallajePantalones.id },
+          { name: '12', type_size_id: tallajePantalones.id },
+          { name: '14', type_size_id: tallajePantalones.id },
+          { name: '16', type_size_id: tallajePantalones.id }
+        );
+      }
+
+      if (defaultSizes.length > 0) {
         await Size.bulkCreate(defaultSizes);
         console.log('✅ Tallas por defecto creadas.');
       }
@@ -121,11 +130,11 @@ const createDefaultColors = async () => {
 const createDefaultCategories = async () => {
   try {
     const categoriesCount = await Category.count();
-    
+
     if (categoriesCount === 0) {
-      // Obtener los IDs de los tipos de tallas
-      const prendasSuperiores = await TypeSize.findOne({ where: { description: 'Tallaje por letras' } });
-      const prendasInferiores = await TypeSize.findOne({ where: { description: 'Tallaje pantalones' } });
+      // Obtener los IDs de los tipos de tallas (usar los mismos nombres creados en createDefaultTypeSizes)
+      const tallajeLetras = await TypeSize.findOne({ where: { description: 'Tallaje por letras' } });
+      const tallajePantalones = await TypeSize.findOne({ where: { description: 'Tallaje para pantalones' } });
 
       const defaultCategories = [
         {
@@ -133,21 +142,21 @@ const createDefaultCategories = async () => {
           description: 'Camisetas para todas las ocasiones',
           type: 'normal',
           sort_order: 1,
-          type_size_id: prendasSuperiores?.id
+          type_size_id: tallajeLetras?.id
         },
         {
           name: 'Leggins',
           description: 'Leggins cómodos y modernos',
           type: 'normal',
           sort_order: 2,
-          type_size_id: prendasInferiores?.id
+          type_size_id: tallajePantalones?.id
         },
         {
           name: 'Buzos',
           description: 'Buzos para el clima frío',
           type: 'normal',
           sort_order: 3,
-          type_size_id: prendasSuperiores?.id
+          type_size_id: tallajeLetras?.id
         },
       ];
 

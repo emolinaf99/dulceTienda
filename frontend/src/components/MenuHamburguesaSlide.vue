@@ -1,11 +1,16 @@
 <script setup>
-    import {reactive,ref,onMounted, watch} from 'vue'
+    import {reactive,ref,onMounted, watch, computed} from 'vue'
     import { useCategories } from '../js/composables/useCategories.js'
     import { useRoute } from 'vue-router'
+    import { useUserStore } from '../js/stores/userLogged.js'
 
     // Usar el composable de categorías
     const { categories, loading, error } = useCategories();
     const route = useRoute();
+    
+    // Usuario store
+    const userStore = useUserStore();
+    const userLogged = computed(() => userStore.userLogged);
 
     onMounted(() => {
         
@@ -73,8 +78,18 @@
         </div>
 
         <div class="contenedorSiteHome">
-            <a href="https://www.instagram.com/db_basic/" target="_blank"><div class="contItem"><i class="fa-brands fa-instagram"></i><p>Síguenos</p></div></a>
-            
+            <RouterLink to="/orders" v-if="userLogged">
+                <div class="contItem">
+                    <i class="fas fa-receipt"></i>
+                    <p>Mis Pedidos</p>
+                </div>
+            </RouterLink>
+            <a href="https://www.instagram.com/db_basic/" target="_blank">
+                <div class="contItem">
+                    <i class="fa-brands fa-instagram"></i>
+                    <p>Síguenos</p>
+                </div>
+            </a>
         </div>
         
     </div>

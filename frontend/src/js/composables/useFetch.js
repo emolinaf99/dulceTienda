@@ -29,16 +29,24 @@ export async function useApi(url, method = 'GET', body = null, contentType = 'ap
       };
 
       const response = await fetch(url, options);
+      const text = await response.text();
+      const responseData = text ? JSON.parse(text) : null;
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Crear un error que preserve la información del response
+        const httpError = new Error(`HTTP error! status: ${response.status}`);
+        httpError.response = {
+          status: response.status,
+          statusText: response.statusText,
+          data: responseData
+        };
+        throw httpError;
       }
 
-      const text = await response.text(); 
-      data.value = text ? JSON.parse(text) : null; // Si el cuerpo está vacío, asigna null
+      data.value = responseData;
       
     } catch (err) {
-      error.value = err.message; // Almacena el mensaje de error
+      error.value = err; // Almacena el objeto error completo, no solo el message
     } finally {
       loading.value = false; // Indica que la solicitud ha finalizado
     }
