@@ -1,6 +1,6 @@
 
 <script setup>
-    import {reactive,ref,onMounted, watch, computed} from 'vue'
+    import {reactive,ref,onMounted, watch, computed, nextTick} from 'vue'
     import { RouterLink, RouterView, useRoute} from 'vue-router'
     import {scrollearConClick} from '/src/js/scrollWithClick'
     import { useApi } from '/src/js/composables/useFetch.js'
@@ -56,6 +56,9 @@
     onMounted(async () => {
         await fetchSaleProducts()
 
+        // Esperar a que Vue actualice el DOM después de cargar los productos
+        await nextTick()
+
         let contenedorScrollRebajas = document.querySelector('.vitrinaSlideRebajas')
         let itemIntoScroll = document.querySelector('.cajaElemento')
 
@@ -72,8 +75,19 @@
             })
         }
 
-        checkOverflow(contenedorScrollRebajas, scrollIzquierdaRebajas, scrollDerechaRebajas)
-        window.addEventListener('resize', () => checkOverflow(contenedorScrollRebajas, scrollIzquierdaRebajas, scrollDerechaRebajas))
+        checkOverflow(contenedorScrollRebajas, scrollIzquierdaRebajas, scrollDerechaRebajas, products.value.length)
+        window.addEventListener('resize', () => checkOverflow(contenedorScrollRebajas, scrollIzquierdaRebajas, scrollDerechaRebajas, products.value.length))
+    })
+
+    // Watch para actualizar overflow cuando cambie la cantidad de productos
+    watch(() => products.value.length, async () => {
+        await nextTick() // Esperar a que el DOM se actualice
+        const contenedorScrollRebajas = document.querySelector('.vitrinaSlideRebajas')
+        const scrollIzquierdaRebajas = document.querySelector('.scrollIzquierdaRebajas')
+        const scrollDerechaRebajas = document.querySelector('.scrollDerechaRebajas')
+        if (contenedorScrollRebajas) {
+            checkOverflow(contenedorScrollRebajas, scrollIzquierdaRebajas, scrollDerechaRebajas, products.value.length)
+        }
     })
 </script>
 

@@ -318,8 +318,13 @@ export const createOrder = async (req, res) => {
 // Obtener órdenes del usuario
 export const getUserOrders = async (req, res) => {
   try {
+    console.log('📦 [GET ORDERS] Iniciando obtención de órdenes...');
+    console.log('📦 [GET ORDERS] Usuario ID:', req.user?.id);
+
     const { page = 1, limit = 10 } = req.query;
     const offset = (page - 1) * limit;
+
+    console.log('📦 [GET ORDERS] Parámetros de paginación:', { page, limit, offset });
 
     const orders = await Order.findAndCountAll({
       where: { user_id: req.user.id },
@@ -331,7 +336,8 @@ export const getUserOrders = async (req, res) => {
             {
               model: Product,
               as: 'product',
-              attributes: ['id', 'name']
+              attributes: ['id', 'name'],
+              required: false // No falla si el producto fue eliminado
             }
           ]
         }
@@ -340,6 +346,9 @@ export const getUserOrders = async (req, res) => {
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
+
+    console.log('📦 [GET ORDERS] Órdenes encontradas:', orders.count);
+    console.log('📦 [GET ORDERS] Órdenes en esta página:', orders.rows.length);
 
     res.json({
       success: true,
@@ -355,10 +364,14 @@ export const getUserOrders = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error obteniendo órdenes del usuario:', error);
+    console.error('📦 [GET ORDERS] ❌ Error obteniendo órdenes del usuario:', error);
+    console.error('📦 [GET ORDERS] ❌ Stack trace:', error.stack);
+    console.error('📦 [GET ORDERS] ❌ Mensaje de error:', error.message);
+
     res.status(500).json({
       success: false,
-      message: 'Error interno del servidor'
+      message: 'Error interno del servidor',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };

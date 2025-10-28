@@ -3,18 +3,26 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    font-family: 'Roboto';
+    justify-content: flex-start;
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
     margin-top: 6rem;
+    background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
+    min-height: calc(100vh - 6rem);
+    padding: 2rem 1rem;
 }
 
 .contenedorCheckout {
     width: 100%;
+    max-width: 900px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center
-
+    justify-content: center;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    padding: 2rem;
 }
 
 .infoContCheckout {
@@ -23,7 +31,6 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 1rem;
     gap: 2rem;
 }
 
@@ -41,15 +48,30 @@
     font-weight: 600;
     width: 100%;
     text-align: left;
-    font-size: 21px;
+    font-size: 1rem;
+    color: #333;
+    margin-bottom: 0.5rem;
 }
 
 .inputCheckout {
-    border: 1px solid #ced4da;
+    border: 2px solid #e0e0e0;
     height: 3rem;
-    border-radius: 5px;
-    padding-left: 0.5rem;
+    border-radius: 10px;
+    padding: 0 1rem;
     width: 100%;
+    font-size: 0.9375rem;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.inputCheckout:focus {
+    outline: none;
+    border-color: #f06baa;
+    box-shadow: 0 0 0 3px rgba(240, 107, 170, 0.1);
+}
+
+.inputCheckout:hover {
+    border-color: #f06baa;
 }
 
 .checkCO {
@@ -67,17 +89,24 @@
 }
 
 .buttonCO {
-    border: 1px solid #ced4da;
-    height: 3rem;
-    border-radius: 5px;
-    padding-left: 0.5rem;
+    border: 2px solid #e0e0e0;
+    height: 3.5rem;
+    border-radius: 10px;
+    padding: 0 1rem;
     width: 100%;
     display: flex;
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    padding: 0 1rem;
     gap: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.buttonCO:hover {
+    border-color: #f06baa;
+    background: rgba(240, 107, 170, 0.02);
 }
 
 .blockIntoButton {
@@ -96,8 +125,8 @@
 }
 
 .selectedOption {
-    border: 1px solid #333333;
-    background-color: #efebeb41;
+    border: 2px solid #333;
+    background: rgba(240, 107, 170, 0.05);
     color: black;
 }
 
@@ -118,7 +147,7 @@
 
 .contRowFormCheckout {
     display: flex;
-    flex: column;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     gap: 0.3rem;
@@ -146,10 +175,57 @@
 
 .pPago {
     width: 100%;
-    margin-bottom: 1rem; 
-    color: #838181; 
+    margin-bottom: 1rem;
+    color: #838181;
     font-size: 14px;
     text-align: left;
+}
+
+.btnCheckout {
+    width: 100%;
+    height: auto;
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, #f06baa, #e85a9b);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(240, 107, 170, 0.3);
+}
+
+.btnCheckout:hover:not(:disabled) {
+    background: linear-gradient(135deg, #e85a9b, #d0487d);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(240, 107, 170, 0.4);
+}
+
+.btnCheckout:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.btnCheckout:disabled {
+    background: linear-gradient(135deg, #e0e0e0, #d0d0d0);
+    color: #999;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+.error {
+    width: 100%;
+    margin-top: 0.25rem;
+}
+
+.error p {
+    color: #666;
+    font-size: 0.8125rem;
+    margin: 0;
+    padding: 0.25rem 0;
 }
 
 @media screen and (min-width:768px) {
@@ -165,7 +241,8 @@
     .contRowFormCheckout {
         width: 100%;
         display: flex;
-        flex: row;
+        flex-direction: row;
+        gap: 1rem;
     } 
 }
 

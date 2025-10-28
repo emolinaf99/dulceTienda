@@ -488,15 +488,10 @@
                     <div class="error" v-if="errors.general">
                         <p>{{ errors.general }}</p>
                     </div>
-                    <button 
-                        class="inputCheckout" 
-                        @click="handleSubmit" 
-                        :disabled="orderLoading || !canProceedToCheckout" 
-                        style="background-color: #007bff; color: white; border: none; padding: 12px; cursor: pointer;"
-                        :style="{ 
-                            opacity: (orderLoading || !canProceedToCheckout) ? 0.6 : 1,
-                            cursor: (orderLoading || !canProceedToCheckout) ? 'not-allowed' : 'pointer'
-                        }"
+                    <button
+                        class="btnCheckout"
+                        @click="handleSubmit"
+                        :disabled="orderLoading || !canProceedToCheckout"
                     >
                         <span v-if="orderLoading">
                             <i class="fas fa-spinner fa-spin"></i>

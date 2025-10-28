@@ -1,6 +1,6 @@
 
 <script setup>
-    import {reactive,ref,onMounted, watch, computed} from 'vue'
+    import {reactive,ref,onMounted, watch, computed, nextTick} from 'vue'
     import { RouterLink, RouterView, useRoute} from 'vue-router'
     import {scrollearConClick} from '/src/js/scrollWithClick'
     import { useApi } from '/src/js/composables/useFetch.js'
@@ -116,6 +116,9 @@
     onMounted(async () => {
         await fetchProducts()
 
+        // Esperar a que Vue actualice el DOM después de cargar los productos
+        await nextTick()
+
         let contenedorScrollNuevos = document.querySelector('.vitrinaSlideNuevos')
         let itemIntoScroll = document.querySelector('.cajaElemento')
 
@@ -132,8 +135,19 @@
             })
         }
 
-        checkOverflow(contenedorScrollNuevos, scrollIzquierdaNuevo, scrollDerechaNuevo)
-        window.addEventListener('resize', () => checkOverflow(contenedorScrollNuevos, scrollIzquierdaNuevo, scrollDerechaNuevo))
+        checkOverflow(contenedorScrollNuevos, scrollIzquierdaNuevo, scrollDerechaNuevo, products.value.length)
+        window.addEventListener('resize', () => checkOverflow(contenedorScrollNuevos, scrollIzquierdaNuevo, scrollDerechaNuevo, products.value.length))
+    })
+
+    // Watch para actualizar overflow cuando cambie la cantidad de productos
+    watch(() => products.value.length, async () => {
+        await nextTick() // Esperar a que el DOM se actualice
+        const contenedorScrollNuevos = document.querySelector('.vitrinaSlideNuevos')
+        const scrollIzquierdaNuevo = document.querySelector('.scrollIzquierdaNuevo')
+        const scrollDerechaNuevo = document.querySelector('.scrollDerechaNuevo')
+        if (contenedorScrollNuevos) {
+            checkOverflow(contenedorScrollNuevos, scrollIzquierdaNuevo, scrollDerechaNuevo, products.value.length)
+        }
     })
 
     // Watch para recargar productos cuando cambia la ruta

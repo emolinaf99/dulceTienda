@@ -125,12 +125,17 @@
             
             if (productData) {
                 product.value = productData;
-                
+                console.log('Product data:', {
+                    price: productData.price,
+                    final_price: productData.final_price,
+                    discount_percentage: productData.discount_percentage
+                });
+
                 // Usar detección automática de color en lugar de seleccionar manualmente el primero
                 nextTick(() => {
                     detectAndSelectColorFromCurrentImage();
                 });
-                
+
                 // Verificar si el producto está en favoritos
                 await checkFavoriteStatus();
             } else {
@@ -1006,8 +1011,9 @@
 
         <!-- Product Content -->
         <div v-else-if="product && product.name" class="contenedorDetalleProducto">
-           
-            <div class="contenedorImagenesMini" ref="thumbnailContainerRef">
+
+            <div class="contenedorImagenesWrapper">
+                <div class="contenedorImagenesMini" ref="thumbnailContainerRef">
                 <img 
                     v-for="(image, index) in currentImages" 
                     :key="index"
@@ -1039,25 +1045,30 @@
                     </div>
                 </div>
             </div>
-            
+            </div>
+
             <div class="contenedorInfoDetalleProd">
                 <h3>{{ product.name ? product.name.toUpperCase() : 'Cargando...' }}</h3>
                 <div class="precioDetalleProd">
                     <p class="preDetText">Precio</p>
                     <p class="preDet">
-                        <span v-if="product.discount_percentage > 0 && product.price" style="text-decoration: line-through; color: #999; font-size: 0.9rem;">
-                            ${{ Math.floor(product.price).toLocaleString('es-CO') }}
-                        </span>
-                        <span v-if="product.final_price">
-                           ${{ Math.floor(product.final_price).toLocaleString('es-CO') }}
-                        </span>
-                        <span v-else-if="product.price">
-                            ${{ Math.floor(product.price).toLocaleString('es-CO') }}
-                        </span>
+                        <template v-if="parseFloat(product.discount_percentage) > 0 && product.price">
+                            <span style="text-decoration: line-through; color: #999; font-size: 0.9rem;">
+                                ${{ Math.floor(parseFloat(product.price)).toLocaleString('es-CO') }}
+                            </span>
+                            <span>
+                                ${{ Math.floor(parseFloat(product.final_price) || (parseFloat(product.price) * (1 - parseFloat(product.discount_percentage) / 100))).toLocaleString('es-CO') }}
+                            </span>
+                            <span style="color: #28a745; font-size: 0.8rem; margin-left: 0.5rem;">
+                                (-{{ Math.floor(parseFloat(product.discount_percentage)) }}%)
+                            </span>
+                        </template>
+                        <template v-else-if="product.price && parseFloat(product.price) > 0">
+                            <span>
+                                ${{ Math.floor(parseFloat(product.price)).toLocaleString('es-CO') }}
+                            </span>
+                        </template>
                         <span v-else>Precio no disponible</span>
-                        <span v-if="product.discount_percentage > 0" style="color: #28a745; font-size: 0.8rem; margin-left: 0.5rem;">
-                            (-{{ Math.floor(product.discount_percentage) }}%)
-                        </span>
                     </p>
                 </div>
                 <div class="precioDetalleProd">

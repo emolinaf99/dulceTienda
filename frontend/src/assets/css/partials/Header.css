@@ -166,22 +166,58 @@ header {
 }
 
 .notificacionContainer {
-    width: fit-content;
-    padding: 0.5rem 1rem;
-    height: 2.5rem;
-    background-color: white ;
-    border: #d5d5d5 1px solid;
-    color: tomato;
+    min-width: 300px;
+    max-width: 400px;
+    padding: 1rem 1.25rem;
+    min-height: 54px;
+    background: white;
+    border-radius: 8px;
+    color: #333;
     position: fixed;
-    z-index: 13;
+    z-index: 100000;
     bottom: 2rem;
     left: 2rem;
     display: none;
     flex-direction: row;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
-    box-shadow: 5px 5px 5px rgba(0, 0, 0, .16);
-    border: 1px solid tomato;
+    gap: 0.875rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
+    border-left: 3px solid;
+    animation: slideInLeft 0.3s ease-out;
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+@keyframes slideInLeft {
+    from {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.notificacionContainer p {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: inherit;
+}
+
+.notificacionContainer::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-image: var(--icon);
+    opacity: 0.9;
 }
 
 @media screen and (min-width:768px) { 
@@ -238,6 +274,17 @@ header {
     
 
     .notificacionContainer {
-        left: 4rem;
+        left: 2rem;
+    }
+}
+
+@media screen and (max-width: 640px) {
+    .notificacionContainer {
+        left: 1rem;
+        right: 1rem;
+        bottom: 1rem;
+        min-width: auto;
+        width: calc(100% - 2rem);
+        max-width: none;
     }
 }
