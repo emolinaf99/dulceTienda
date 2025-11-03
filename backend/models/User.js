@@ -55,6 +55,14 @@ const User = sequelize.define('User', {
   postal_code: {
     type: DataTypes.STRING(20),
     allowNull: true
+  },
+  resetPasswordToken: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
+  resetPasswordExpires: {
+    type: DataTypes.DATE,
+    allowNull: true
   }
 }, {
   tableName: 'users',

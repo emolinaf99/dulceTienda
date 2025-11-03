@@ -7,13 +7,24 @@
     // Usar el composable de categorías
     const { categories, loading, error } = useCategories();
     const route = useRoute();
-    
+
     // Usuario store
     const userStore = useUserStore();
     const userLogged = computed(() => userStore.userLogged);
 
+    // Función para cerrar el sidebar (accesible desde el template)
+    const cerrarSidebar = () => {
+        let navBarBurguerMenu = document.querySelector('.site-home')
+        let fondoTransparenteOscuro = document.querySelector('.opacity')
+
+        if(navBarBurguerMenu.classList.contains('activeMain')) {
+            navBarBurguerMenu.classList.remove('activeMain')
+            fondoTransparenteOscuro.style.display = 'none'
+        }
+    }
+
     onMounted(() => {
-        
+
         function abrirYCerrarNavbarBurguerMenu() {
             let navBarBurguerMenu = document.querySelector('.site-home')
             let fondoTransparenteOscuro = document.querySelector('.opacity')
@@ -29,13 +40,11 @@
 
         // Ejecucion de abrirYCerrarNavbarBurguerMenu()
 
-        let burgerMenuIcon = document.getElementById('burgerMenuIcon')
         let equisBurgerMenu = document.getElementById('equisOculta')
-        let optionsNavbarBurgerMenu = document.querySelectorAll('.site-home a')
         let fondoTransparenteOscuro = document.querySelector('.opacity')
 
         // El evento click ya se maneja en Header.vue
-        // Solo mantenemos los otros event listeners
+        // Los clicks en RouterLinks ahora se manejan con @click en el template
 
         equisBurgerMenu.addEventListener('click',() => {
             abrirYCerrarNavbarBurguerMenu()
@@ -49,49 +58,43 @@
             abrirYCerrarNavbarBurguerMenu()
         })
 
-
-        optionsNavbarBurgerMenu.forEach(option => {
-            option.addEventListener('click',() => {
-                abrirYCerrarNavbarBurguerMenu()
-            })
-        });
-
-        
-
     })
-    
+
 </script>
 
 <template>
     <!-- Menu hamburguesa -->
     <div class="site-home" >
-        <i class="fa-solid fa-xmark equis" id="equisOculta"></i> 
+        <i class="fa-solid fa-xmark equis" id="equisOculta"></i>
         <div class="contenedorSiteHome">
-            <RouterLink 
-                v-for="category in categories" 
-                :key="category.id" 
+            <RouterLink
+                v-for="category in categories"
+                :key="category.id"
                 :to="`/category/${category.id}`"
+                @click="cerrarSidebar"
             >
                 <div class="contItem"><p>{{ category.name }}</p></div>
             </RouterLink>
-            <RouterLink to="/"><div class="contItem"><p>Mayoristas</p></div></RouterLink>
+            <RouterLink to="/" @click="cerrarSidebar">
+                <div class="contItem"><p>Mayoristas</p></div>
+            </RouterLink>
         </div>
 
         <div class="contenedorSiteHome">
-            <RouterLink to="/orders" v-if="userLogged">
+            <RouterLink to="/orders" v-if="userLogged" @click="cerrarSidebar">
                 <div class="contItem">
                     <i class="fas fa-receipt"></i>
                     <p>Mis Pedidos</p>
                 </div>
             </RouterLink>
-            <a href="https://www.instagram.com/db_basic/" target="_blank">
+            <a href="https://www.instagram.com/db_basic/" target="_blank" @click="cerrarSidebar">
                 <div class="contItem">
                     <i class="fa-brands fa-instagram"></i>
                     <p>Síguenos</p>
                 </div>
             </a>
         </div>
-        
+
     </div>
 </template>
 

@@ -94,8 +94,15 @@ onMounted(async () => {
 <template>
   <section class="ordersSection">
     <div class="ordersContainer">
-      <h1>Mis Pedidos</h1>
-      
+      <!-- Header con icono -->
+      <div class="ordersHeader">
+        <i class="fa-solid fa-receipt headerIcon"></i>
+        <h1>Mis Pedidos</h1>
+        <p class="itemCount" v-if="!loading && orders.length > 0">
+          {{ orders.length }} {{ orders.length === 1 ? 'pedido' : 'pedidos' }}
+        </p>
+      </div>
+
       <!-- Mensaje para usuarios no autenticados -->
       <div v-if="!isAuthenticated" class="unauthenticatedMessage">
         <h3>Inicia sesión para ver tus pedidos</h3>
@@ -125,7 +132,10 @@ onMounted(async () => {
         </div>
         <h3>No tienes pedidos aún</h3>
         <p>Cuando realices tu primera compra, aparecerá aquí</p>
-        <RouterLink to="/" class="exploreButton">Explorar productos</RouterLink>
+        <RouterLink to="/" class="exploreButton">
+          <i class="fa-solid fa-compass"></i>
+          Explorar productos
+        </RouterLink>
       </div>
       
       <!-- Orders list -->
@@ -236,20 +246,48 @@ onMounted(async () => {
   margin: 0 auto;
 }
 
-.ordersContainer h1 {
+/* ========================================
+   HEADER WITH ICON
+   ======================================== */
+
+.ordersHeader {
   text-align: center;
+  margin-bottom: 3rem;
+  position: relative;
+}
+
+.headerIcon {
+  font-size: 3rem;
+  color: #f06baa;
+  margin-bottom: 1rem;
+  display: block;
+  animation: bounce 2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.ordersHeader h1 {
   font-size: 2rem;
   font-weight: 700;
-  margin-bottom: 2.5rem;
   color: #222;
+  margin: 0 0 0.5rem 0;
   letter-spacing: -0.5px;
+}
+
+.itemCount {
+  font-size: 1rem;
+  color: #666;
+  margin: 0;
+  font-weight: 500;
 }
 
 /* Estados */
 .unauthenticatedMessage,
 .loadingState,
-.errorState,
-.emptyOrdersState {
+.errorState {
   text-align: center;
   padding: 3rem 2rem;
   background: white;
@@ -258,17 +296,29 @@ onMounted(async () => {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
 }
 
-.unauthenticatedMessage h3,
-.emptyOrdersState h3 {
+.unauthenticatedMessage h3 {
   color: #333;
   font-weight: 600;
   margin-bottom: 1rem;
 }
 
-.unauthenticatedMessage p,
-.emptyOrdersState p {
+.unauthenticatedMessage p {
   color: #666;
   line-height: 1.6;
+}
+
+/* ========================================
+   EMPTY ORDERS STATE
+   ======================================== */
+
+.emptyOrdersState {
+  text-align: center;
+  padding: 5rem 2rem;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .spinner {
@@ -292,10 +342,33 @@ onMounted(async () => {
 }
 
 .emptyIcon {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 2rem;
+  background: linear-gradient(135deg, rgba(240, 107, 170, 0.1), rgba(232, 90, 155, 0.1));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emptyIcon i {
   font-size: 4rem;
   color: #f06baa;
-  margin-bottom: 1.5rem;
-  opacity: 0.4;
+}
+
+.emptyOrdersState h3 {
+  font-size: 2rem;
+  color: #222;
+  margin: 0 0 1rem 0;
+  font-weight: 600;
+}
+
+.emptyOrdersState p {
+  color: #666;
+  font-size: 1.125rem;
+  margin-bottom: 2.5rem;
+  line-height: 1.6;
 }
 
 .errorState {
@@ -347,23 +420,30 @@ onMounted(async () => {
 }
 
 .exploreButton {
-  display: inline-block;
-  padding: 1rem 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
   background: linear-gradient(135deg, #f06baa, #e85a9b);
   color: white;
-  text-decoration: none;
-  border-radius: 8px;
-  margin-top: 1.5rem;
+  padding: 1.125rem 2.5rem;
+  border-radius: 12px;
+  font-size: 1rem;
   font-weight: 600;
-  letter-spacing: 0.3px;
+  text-decoration: none;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 12px rgba(240, 107, 170, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .exploreButton:hover {
   background: linear-gradient(135deg, #e85a9b, #d0487d);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(240, 107, 170, 0.4);
+}
+
+.exploreButton i {
+  font-size: 1.125rem;
 }
 
 /* Lista de órdenes */

@@ -21,6 +21,17 @@ const router = createRouter({
       component: () => import('../views/Register.vue')
     },
     {
+      path: '/forgot-password',
+      name: 'ForgotPassword',
+      component: () => import('../views/ForgotPassword.vue')
+    },
+    {
+      path: '/reset-password/:token',
+      name: 'ResetPassword',
+      component: () => import('../views/ResetPassword.vue'),
+      props: true
+    },
+    {
       path: '/wishlist',
       name: 'WishList',
       component: () => import('../views/WishList.vue')
@@ -32,9 +43,13 @@ const router = createRouter({
       props: true // Pasar el parámetro 'id' como prop al componente
     },
     {
+      path: '/bag',
+      name: 'Bag',
+      component: () => import('../views/Bag.vue')
+    },
+    {
       path: '/cart',
-      name: 'Cart',
-      component: () => import('../views/Cart.vue')
+      redirect: '/bag'
     },
     {
       path: '/checkouts',

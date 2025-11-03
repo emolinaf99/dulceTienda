@@ -9,7 +9,8 @@
     const userStore = useUserStore()
     
     const form = reactive({
-        name: '',
+        firstName: '',
+        lastName: '',
         email: '',
         password: '',
         confirmPassword: ''
@@ -20,23 +21,28 @@
 
     // Reglas de validación para el formulario de registro
     const validationRules = {
-        name: { 
-            required: true, 
+        firstName: {
+            required: true,
             minLength: 2,
-            maxLength: 50
+            maxLength: 100
         },
-        email: { 
-            required: true, 
-            email: true 
+        lastName: {
+            required: true,
+            minLength: 2,
+            maxLength: 100
         },
-        password: { 
-            required: true, 
+        email: {
+            required: true,
+            email: true
+        },
+        password: {
+            required: true,
             minLength: 6,
             hasNumber: true,
             hasSpecialChar: true
         },
-        confirmPassword: { 
-            required: true, 
+        confirmPassword: {
+            required: true,
             match: 'password'
         }
     }
@@ -57,7 +63,8 @@
 
         try {
             const { data, error } = await useApi('/api/auth/register', 'POST', {
-                name: form.name,
+                first_name: form.firstName,
+                last_name: form.lastName,
                 email: form.email,
                 password: form.password
             })
@@ -70,7 +77,10 @@
             if (data.value && data.value.success) {
                 // Usar el store para guardar el usuario (el token ya está en cookies)
                 userStore.setUser(data.value.user)
-                
+
+                // Sincronizar datos del localStorage al backend
+                await userStore.syncLocalStorageToBackend()
+
                 router.push('/')
             } else {
                 errors.value.general = 'Error al registrar usuario'
@@ -89,9 +99,16 @@
         <div class="bloqueLogin">
             <div class="inputBlock">
                 <label for="">Nombre</label>
-                <input type="text" v-model="form.name" :disabled="isLoading" @blur="validateFormData">
-                <div class="error" v-if="errors.name">
-                    <p>{{ errors.name }}</p>
+                <input type="text" v-model="form.firstName" :disabled="isLoading" @blur="validateFormData">
+                <div class="error" v-if="errors.firstName">
+                    <p>{{ errors.firstName }}</p>
+                </div>
+            </div>
+            <div class="inputBlock">
+                <label for="">Apellido</label>
+                <input type="text" v-model="form.lastName" :disabled="isLoading" @blur="validateFormData">
+                <div class="error" v-if="errors.lastName">
+                    <p>{{ errors.lastName }}</p>
                 </div>
             </div>
             <div class="inputBlock">

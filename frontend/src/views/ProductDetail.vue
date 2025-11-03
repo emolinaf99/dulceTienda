@@ -152,13 +152,8 @@
             return;
         }
 
-        // Solo verificar si el usuario está autenticado según el store
-        if (!userStore.isLoggedIn) {
-            isFavorite.value = false;
-            return;
-        }
-        
         try {
+            // isProductInFavorites ahora funciona tanto para usuarios autenticados como invitados
             isFavorite.value = await isProductInFavorites(props.id);
         } catch (err) {
             console.error('Error checking favorite status:', err);
@@ -168,14 +163,7 @@
 
     const handleFavoriteToggle = async () => {
         if (!props.id) return;
-        
-        // Verificar si el usuario está autenticado
-        if (!userStore.isLoggedIn) {
-            // Redirigir al login o mostrar mensaje
-            alert('Debes iniciar sesión para agregar productos a favoritos');
-            return;
-        }
-        
+
         try {
             const success = await toggleFavorite(props.id);
             if (success) {
@@ -687,12 +675,6 @@
 
     // Función para agregar producto al carrito
     const handleAddToCart = async () => {
-        // Verificar que el usuario esté autenticado
-        if (!userStore.isLoggedIn) {
-            mostrarNotificacion('Debes iniciar sesión para agregar productos al carrito', 0);
-            return;
-        }
-
         // Verificar que se haya seleccionado color y talla
         if (!selectedColor.value) {
             mostrarNotificacion('Por favor selecciona un color', 0);
@@ -721,7 +703,16 @@
                 product_id: parseInt(props.id),
                 quantity: quantity.value,
                 size_id: selectedSize.value.id,
-                color_id: selectedColor.value.id
+                color_id: selectedColor.value.id,
+                // Datos adicionales para localStorage
+                name: product.value.name,
+                price: product.value.price,
+                final_price: product.value.final_price,
+                discount_percentage: product.value.discount_percentage,
+                colorImages: product.value.colorImages,
+                size_name: selectedSize.value.name,
+                color_name: selectedColor.value.name,
+                color_hex: selectedColor.value.hex_code
             });
 
             if (result.success) {
@@ -1190,10 +1181,10 @@
                                 opacity: favLoading ? 0.7 : 1 
                             }"
                         >
-                            <i 
-                                class="fa-solid fa-heart" 
-                                :style="{ 
-                                    color: isFavorite ? '#ff69b4' : '#666',
+                            <i
+                                class="fa-solid fa-heart"
+                                :style="{
+                                    color: isFavorite ? '#f06baa' : '#666',
                                     marginRight: '8px'
                                 }"
                             ></i>

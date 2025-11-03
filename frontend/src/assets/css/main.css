@@ -66,6 +66,9 @@ ul li {
   list-style: none;
 }
 
+.none {
+  display: none;
+}
 /* Para darle nombre a una fuente dentro del proyecto no existente en el sistema */
 @font-face {
   font-family: "Nexa Bold";

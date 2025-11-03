@@ -44,14 +44,47 @@ const formatPrice = (price) => {
 // Función para obtener imagen principal del producto
 const getMainImage = (item) => {
   console.log('🖼️ Cart - Getting image for item:', item)
-  console.log('🖼️ Cart - Product colorImages:', item.product?.colorImages)
-  
-  if (item && item.product && item.product.colorImages && item.product.colorImages.length > 0) {
+  console.log('🖼️ Cart - colorImages:', item?.colorImages)
+  console.log('🖼️ Cart - product:', item?.product)
+
+  // Estructura del backend (usuario autenticado)
+  if (item?.product?.colorImages && item.product.colorImages.length > 0) {
     const imagePath = `/uploads/products/${item.product.colorImages[0].img}`
-    console.log('🖼️ Cart - Image path:', imagePath)
+    console.log('🖼️ Cart - Backend image path:', imagePath)
     return imagePath
   }
-  
+
+  // Estructura de localStorage (usuario invitado)
+  if (item?.colorImages) {
+    console.log('🖼️ Cart - Searching for color_id:', item.color_id)
+
+    // colorImages puede ser un array o un objeto
+    const colorImagesArray = Array.isArray(item.colorImages)
+      ? item.colorImages
+      : Object.values(item.colorImages)
+
+    if (colorImagesArray.length > 0) {
+      // Buscar la imagen del color seleccionado
+      const colorImage = colorImagesArray.find(ci => ci.color_id === item.color_id)
+      console.log('🖼️ Cart - Found colorImage:', colorImage)
+
+      // El backend guarda la imagen en el campo 'img' directamente
+      if (colorImage && colorImage.img) {
+        const imagePath = `/uploads/products/${colorImage.img}`
+        console.log('🖼️ Cart - LocalStorage image path:', imagePath)
+        return imagePath
+      }
+
+      // Si no se encuentra por color_id, usar la primera imagen disponible
+      const firstColorImage = colorImagesArray[0]
+      if (firstColorImage && firstColorImage.img) {
+        const imagePath = `/uploads/products/${firstColorImage.img}`
+        console.log('🖼️ Cart - Using first available image:', imagePath)
+        return imagePath
+      }
+    }
+  }
+
   console.log('🖼️ Cart - Using placeholder image')
   return '/img/placeholder.jpg'
 }
@@ -123,9 +156,7 @@ const handleRemoveItem = async (itemId) => {
 // Cargar carrito al montar el componente
 onMounted(async () => {
   await userStore.loadUserFromStorage()
-  if (isAuthenticated.value) {
-    await loadCart()
-  }
+  await loadCart()
 })
 </script>
 
@@ -134,21 +165,12 @@ onMounted(async () => {
     <div class="contenedorBolsaDeCompras">
       <h4>BOLSA DE COMPRAS</h4>
       
-      <!-- Mensaje para usuarios no autenticados -->
-      <div v-if="!isAuthenticated" class="unauthenticatedMessage">
-        <h3>Inicia sesión para ver tu carrito</h3>
-        <p>Para acceder a tu carrito de compras, por favor 
-          <RouterLink to="/login" class="loginLink">inicia sesión</RouterLink> o 
-          <RouterLink to="/register" class="registerLink">crea una cuenta</RouterLink>
-        </p>
-      </div>
-      
       <!-- Loading state -->
-      <div v-else-if="loading" class="loadingState">
+      <div v-if="loading" class="loadingState">
         <div class="spinner"></div>
         <p>Cargando tu carrito...</p>
       </div>
-      
+
       <!-- Error state -->
       <div v-else-if="error" class="errorState">
         <i class="fas fa-exclamation-triangle"></i>
@@ -198,18 +220,18 @@ onMounted(async () => {
             class="productBoxCart"
             :class="{ 'updating': isUpdating[item.id] }"
           >
-            <img 
-              :src="getMainImage(item)" 
-              :alt="item.product.name"
+            <img
+              :src="getMainImage(item)"
+              :alt="item.product?.name || item.name"
             >
             <div class="infoProdCartBlock">
               <div class="prodCartColumn">
-                <p class="nameProdCart">{{ item.product.name }}</p>
+                <p class="nameProdCart">{{ item.product?.name || item.name }}</p>
                 <div class="variantInfo" style="margin-top: 1rem">
-                  <span class="variantLabel">Color: {{ item.color.name }}</span>
-                  
+                  <span class="variantLabel">Color: {{ item.color?.name || item.color_name }}</span>
+
                 </div>
-                <span class="variantLabel">Talla: {{ item.size.name }}</span>
+                <span class="variantLabel">Talla: {{ item.size?.name || item.size_name }}</span>
               </div>
               
               <div class="infoProdCart">
@@ -234,8 +256,8 @@ onMounted(async () => {
                     <i class="fa-solid fa-plus"></i>
                   </div>
                 </div>
-                <p class="precioProdCart precioProd">{{ formatPrice(item.unit_price) }}</p>
-                <p class="precioProdCart totalProd">{{ formatPrice(item.total_price) }}</p>
+                <p class="precioProdCart precioProd">{{ formatPrice(item.unit_price || item.final_price || item.price) }}</p>
+                <p class="precioProdCart totalProd">{{ formatPrice(item.total_price || (item.final_price || item.price) * item.quantity) }}</p>
                 <i 
                   class="fa-solid fa-xmark equisProdCart"
                   @click="handleRemoveItem(item.id)"

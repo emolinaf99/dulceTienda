@@ -99,7 +99,7 @@ html:has(.sectionDetailProduct) {
 
 .contenedorInfoDetalleProd h3 {
     font-weight: 600;
-    font-size: 1.5rem;
+    font-size: 2rem;
     color: #222;
     line-height: 1.3;
     margin: 0 0 1.25rem 0;
@@ -429,6 +429,7 @@ html:has(.sectionDetailProduct) {
 
 .addFavText:hover i {
     transform: scale(1.1);
+    color: #f06baa;
 }
 
 /* Estilos para labels con iconos */
@@ -564,7 +565,7 @@ html:has(.sectionDetailProduct) {
         width: auto;
         flex: 1;
         max-width: 550px;
-        min-height: 120vh;
+        /* min-height: 120vh; */
     }
 
     .contenedorInfoDetalleProd h3 {

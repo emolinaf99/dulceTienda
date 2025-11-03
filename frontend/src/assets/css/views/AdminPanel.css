@@ -33,7 +33,7 @@
 }
 
 .adminSidebarHeader h2 {
-  font-size: 1.5rem;
+  font-size: 2rem;
   font-weight: 600;
   color: #333;
   margin: 0;
@@ -116,7 +116,7 @@
 }
 
 .adminCardHeader h3 {
-  font-size: 1.25rem;
+  font-size: 2rem;
   font-weight: 600;
   color: #333;
   margin: 0;
@@ -423,7 +423,7 @@
 
 .adminModalHeader h3 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 2rem;
   color: #333;
 }
 
@@ -534,7 +534,7 @@
   }
 
   .adminCardHeader h3 {
-    font-size: 1.1rem;
+    font-size: 2rem;
   }
 
   /* Table improvements for mobile */
@@ -571,7 +571,7 @@
   }
 
   .adminContentHeader h1 {
-    font-size: 1.3rem; /* Reducir tamaño de fuente */
+    font-size: 2rem; /* Tamaño estándar de título */
     margin: 0;
     line-height: 1.2; /* Mejor line-height para móvil */
   }
@@ -593,7 +593,7 @@
   }
 
   .adminModalHeader h3 {
-    font-size: 1.2rem;
+    font-size: 2rem;
   }
 
   /* Stats grid for mobile */
@@ -607,7 +607,7 @@
   }
 
   .adminStatCard h3 {
-    font-size: 1.5rem;
+    font-size: 2rem;
   }
 
   /* Pagination for mobile */
@@ -677,7 +677,7 @@
   }
 
   .adminCardHeader h3 {
-    font-size: 1rem;
+    font-size: 2rem;
   }
 
   .adminBtn {
@@ -706,7 +706,7 @@
   }
 
   .adminModalHeader h3 {
-    font-size: 1.1rem;
+    font-size: 2rem;
   }
 
   /* Very small table adjustments */
@@ -729,7 +729,7 @@
   }
 
   .adminStatCard h3 {
-    font-size: 1.25rem;
+    font-size: 2rem;
   }
 
   .adminStatCard p {

@@ -9,8 +9,9 @@ import { authRateLimit } from '../middleware/security.js';
 
 const router = express.Router();
 
-router.post('/register', authRateLimit, registerValidation, register);
-router.post('/login', authRateLimit, loginValidation, login);
+// Temporalmente deshabilitado para desarrollo - RECUERDA VOLVER A HABILITARLO
+router.post('/register', /*authRateLimit,*/ registerValidation, register);
+router.post('/login', /*authRateLimit,*/ loginValidation, login);
 router.post('/logout', authenticate, logout);
 router.get('/profile', authenticate, getProfile);
 router.put('/profile', authenticate, updateProfileValidation, updateProfile);

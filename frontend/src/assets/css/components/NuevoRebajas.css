@@ -12,7 +12,7 @@
 
 .seccionElementos h4 {
     font-family: 'Roboto';
-    font-size: 17px;
+    font-size: 32px;
 }
 
 .sectionSlide {
@@ -94,7 +94,6 @@
     justify-content: flex-start;
     width: 100%;
     padding: 1rem 0.75rem;
-    gap: 0.5rem;
     background: white;
     border-top: 1px solid rgba(0, 0, 0, 0.05);
 }

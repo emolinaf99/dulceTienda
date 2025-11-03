@@ -176,8 +176,8 @@
                 return
             }
             if (isCartEmpty.value) {
-                mostrarNotificacion('Tu carrito está vacío', 0)
-                router.push('/cart')
+                mostrarNotificacion('Tu bolsa está vacía', 0)
+                router.push('/bag')
                 return
             }
         }
@@ -287,7 +287,7 @@
                         <p>{{ errors.email }}</p>
                     </div>
                     <div class="checkCO">
-                        <input type="checkbox" v-model="checkoutForm.newsletter" id="newsletter" name="newsletter">
+                        <input class="none" type="checkbox" v-model="checkoutForm.newsletter" id="newsletter" name="newsletter">
                         <label for="newsletter"></label>
                         <p>Enviarme novedades y ofertas por correo electrónico</p>
                     </div>
@@ -358,7 +358,7 @@
                         <p>{{ errors.phone }}</p>
                     </div>
                     <div class="checkCO">
-                        <input type="checkbox" v-model="checkoutForm.saveInfo" id="saveInfo" name="saveInfo">
+                        <input class="none" type="checkbox" v-model="checkoutForm.saveInfo" id="saveInfo" name="saveInfo">
                         <label for="saveInfo"></label>
                         <p>Guardar mi información y consultar más rápidamente la próxima vez</p>
                     </div>

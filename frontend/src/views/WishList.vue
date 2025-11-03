@@ -8,7 +8,7 @@ import { useUserStore } from '@/js/stores/userLogged.js'
 import mostrarNotificacion from '@/js/mensajeNotificacionFront.js'
 
 // Composables
-const { loading: favLoading, error: favError, getUserFavorites, removeFromFavorites } = useFavorites()
+const { loading: favLoading, error: favError, getFavorites, removeFromFavorites } = useFavorites()
 const { getAvailableColors, getAvailableSizes, getVariantStock } = useProducts()
 const { loading: cartLoading, addToCart } = useCart()
 const userStore = useUserStore()
@@ -26,23 +26,39 @@ const isAuthenticated = computed(() => userStore.isLoggedIn)
 
 // Función para cargar favoritos
 const loadFavorites = async () => {
-  if (!isAuthenticated.value) {
-    loading.value = false
-    return
-  }
-
   try {
     loading.value = true
     error.value = null
-    
-    const favoritesData = await getUserFavorites()
-    favorites.value = favoritesData || []
-    
+
+    console.log('🔄 [WISHLIST] Iniciando carga de favoritos...', {
+      isAuthenticated: isAuthenticated.value,
+      hasToken: !!localStorage.getItem('token')
+    });
+
+    const favoritesData = await getFavorites()
+    console.log('📦 [WISHLIST] Datos recibidos de getFavorites:', favoritesData);
+
+    // Si no está autenticado, getFavorites devuelve solo IDs
+    // Necesitamos cargar los datos completos de los productos
+    if (!isAuthenticated.value && Array.isArray(favoritesData) && favoritesData.length > 0 && typeof favoritesData[0] === 'number') {
+      console.log('👤 [WISHLIST] Usuario no autenticado, cargando productos por IDs...');
+      // Son solo IDs, necesitamos cargar los productos
+      const { getProductById } = useProducts()
+      const productsPromises = favoritesData.map(id => getProductById(id))
+      const products = await Promise.all(productsPromises)
+      favorites.value = products.filter(p => p !== null) || []
+      console.log('✅ [WISHLIST] Productos cargados:', favorites.value.length);
+    } else {
+      console.log('🔐 [WISHLIST] Usuario autenticado, usando datos completos del backend');
+      favorites.value = favoritesData || []
+      console.log('✅ [WISHLIST] Favoritos asignados:', favorites.value.length);
+    }
+
     // Inicializar selecciones para cada producto
     initializeProductSelections()
-    
+
   } catch (err) {
-    console.error('Error loading favorites:', err)
+    console.error('❌ [WISHLIST] Error loading favorites:', err)
     error.value = 'Error al cargar la lista de favoritos'
   } finally {
     loading.value = false
@@ -211,16 +227,33 @@ const handleAddToCart = async (productId) => {
   }
 
   try {
+    // Encontrar el producto completo
+    const product = favorites.value.find(p => p.id === productId)
+
+    if (!product) {
+      mostrarNotificacion('Producto no encontrado', 0)
+      return
+    }
+
     const cartData = {
       product_id: productId,
       quantity: selection.quantity,
       size_id: selection.selectedSize.id,
-      color_id: selection.selectedColor.id
+      color_id: selection.selectedColor.id,
+      // Datos adicionales para localStorage
+      name: product.name,
+      price: product.price,
+      final_price: product.final_price,
+      discount_percentage: product.discount_percentage,
+      colorImages: product.colorImages,
+      size_name: selection.selectedSize.name,
+      color_name: selection.selectedColor.name,
+      color_hex: selection.selectedColor.hex_code
     }
-    
+
     console.log('🛒 Datos del carrito enviados desde WishList:', cartData)
     console.log('🛒 Selección completa:', selection)
-    
+
     const result = await addToCart(cartData)
     
     console.log('🛒 Respuesta del servidor:', result)
@@ -246,22 +279,21 @@ onMounted(async () => {
 <template>
   <section class="contenedorGeneralDeseos">
     <div class="contenedorDeseos">
-      <h1>Mi lista de deseos</h1>
-      
-      <!-- Mensaje para usuarios no autenticados -->
-      <div v-if="!isAuthenticated" class="unauthenticatedMessage">
-        <p>Para guardar tus favoritos por favor 
-          <RouterLink to="/login" class="subrayText">inicia sesión</RouterLink> o 
-          <RouterLink to="/register" class="subrayText">crea una cuenta</RouterLink>
+      <!-- Header con icono -->
+      <div class="wishListHeader">
+        <i class="fa-solid fa-heart headerIcon"></i>
+        <h1>Mis Favoritos</h1>
+        <p class="itemCount" v-if="!loading && favorites.length > 0">
+          {{ favorites.length }} {{ favorites.length === 1 ? 'producto' : 'productos' }}
         </p>
       </div>
-      
+
       <!-- Loading state -->
-      <div v-else-if="loading" class="loadingState">
+      <div v-if="loading" class="loadingState">
         <div class="spinner"></div>
         <p>Cargando tus favoritos...</p>
       </div>
-      
+
       <!-- Error state -->
       <div v-else-if="error" class="errorState">
         <i class="fas fa-exclamation-triangle"></i>
@@ -274,9 +306,12 @@ onMounted(async () => {
         <div class="emptyIcon">
           <i class="fas fa-heart"></i>
         </div>
-        <h3>Tu lista de deseos está vacía</h3>
+        <h3>Tu lista de favoritos está vacía</h3>
         <p>Explora nuestros productos y agrega tus favoritos para verlos aquí</p>
-        <RouterLink to="/" class="exploreButton">Explorar productos</RouterLink>
+        <RouterLink to="/" class="exploreButton">
+          <i class="fa-solid fa-compass"></i>
+          Explorar productos
+        </RouterLink>
       </div>
       
       <!-- Lista de productos favoritos -->

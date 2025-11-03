@@ -19,6 +19,7 @@ import sizeRoutes from './routes/sizes.js';
 import colorRoutes from './routes/colors.js';
 import typeSizeRoutes from './routes/typeSizes.js';
 import adminRoutes from './routes/admin.js';
+import passwordResetRoutes from './routes/passwordResetRoutes.js';
 
 // Importar controlador de correos
 import { enviarCorreoContacto } from './controllers/emailController.js';
@@ -90,6 +91,7 @@ app.use('/api/sizes', sizeRoutes);
 app.use('/api/colors', colorRoutes);
 app.use('/api/type-sizes', typeSizeRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/password-reset', passwordResetRoutes);
 
 // Rutas públicas
 app.get('/api/banner', getBannerPublic);

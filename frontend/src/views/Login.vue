@@ -57,7 +57,10 @@
             if (data.value && data.value.success) {
                 // Usar el store para guardar el usuario (el token ya está en cookies)
                 userStore.setUser(data.value.user)
-                
+
+                // Sincronizar datos del localStorage al backend
+                await userStore.syncLocalStorageToBackend()
+
                 router.push('/')
             } else {
                 errors.value.general = 'Error al iniciar sesión'
@@ -109,7 +112,7 @@
                 <button>CREAR CUENTA</button>
             </RouterLink>
 
-            <RouterLink to="/">Recuperar contraseña</RouterLink>
+            <RouterLink to="/forgot-password">¿Olvidaste tu contraseña?</RouterLink>
         </div>
     </section>
 </template>

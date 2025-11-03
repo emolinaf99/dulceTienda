@@ -220,14 +220,19 @@ const toggleColor = (colorId) => {
               <div class="itemData">
                 <div class="nameItem">{{ product.name }}</div>
                 <div class="priceContainer">
-                  <div v-if="product.discount_percentage" class="priceItem discounted">
-                    {{ formatPrice(calculateDiscountedPrice(product.price, product.discount_percentage)) }}
-                  </div>
-                  <div 
-                    class="priceItem" 
-                    :class="{ 'original-price': product.discount_percentage }"
+                  <div
+                    v-if="parseFloat(product.discount_percentage) > 0"
+                    class="priceItem original-price"
                   >
                     {{ formatPrice(product.price) }}
+                  </div>
+                  <div
+                    class="priceItem"
+                    :class="{ 'discounted': parseFloat(product.discount_percentage) > 0 }"
+                  >
+                    {{ parseFloat(product.discount_percentage) > 0
+                        ? formatPrice(calculateDiscountedPrice(product.price, product.discount_percentage))
+                        : formatPrice(product.price) }}
                   </div>
                 </div>
               </div>
@@ -334,6 +339,10 @@ const toggleColor = (colorId) => {
 
 .contenedorGeneralDeseos h4{
   margin: 0 !important;
+}
+
+.contenedorGeneralDeseos h3{
+  font-size: 2rem;
 }
 
 /* Responsive display utilities */
@@ -679,7 +688,7 @@ const toggleColor = (colorId) => {
   width: 100%;
   display: flex;
   flex-direction: row;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 /* Ajustar el contenido cuando no hay sidebar */
@@ -833,10 +842,12 @@ const toggleColor = (colorId) => {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-height: 2.5rem;
+  justify-content: flex-end;
 }
 
 .priceItem.discounted {
-  color: #e74c3c;
+  color: #f06baa;
   font-weight: bold;
 }
 
